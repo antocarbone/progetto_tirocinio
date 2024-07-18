@@ -15,3 +15,24 @@ class RowStatusIndicator extends StatelessWidget {
     );
   }
 }
+
+class MyTextField extends StatelessWidget {
+  final String hint;
+
+  const MyTextField({super.key, required this.hint});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        decoration: InputDecoration(
+          labelText: hint,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -1,4 +1,4 @@
-import 'package:dashboard_tirocinio/screens/home_page.dart';
+import 'package:dashboard_tirocinio/screens/commissioning/node_init_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_esp_ble_prov/flutter_esp_ble_prov.dart';
@@ -127,7 +127,14 @@ class _CommissioningPageState extends State<CommissioningPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Provisioning'),
+        backgroundColor: Colors.orangeAccent.shade200,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomRight: Radius.circular(20), bottomLeft: Radius.circular(20))),
+        title: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Commissioning'),
+          ],
+        ),
       ),
       bottomSheet: SafeArea(
         child: Container(
@@ -314,7 +321,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
                                             child: const Text('Conferma'),
                                             onPressed: () async {
                                               Navigator.of(context).pushAndRemoveUntil(
-                                                  MaterialPageRoute(builder: (context) => HomePage()),
+                                                  MaterialPageRoute(builder: (context) => NodeInitPage()),
                                                       (Route<dynamic> route) => false);
                                               await provisionWifi();
                                             },

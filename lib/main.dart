@@ -1,3 +1,5 @@
+import 'package:dashboard_tirocinio/screens/commissioning/node_init_page.dart';
+import 'package:dashboard_tirocinio/screens/commissioning/sensors_init_page.dart';
 import 'package:dashboard_tirocinio/screens/home_page.dart';
 import 'package:flutter/material.dart';
 
@@ -17,10 +19,12 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        theme: ThemeData(
-          colorSchemeSeed: Colors.orangeAccent,
-        ),
-        home: HomePage()
+      theme: ThemeData(
+        colorSchemeSeed: Colors.orangeAccent,
+      ),
+      home: HomePage()
+      //home: const SensorsInitPage(),
+      //home: const NodeInitPage(),
     );
   }
 }
