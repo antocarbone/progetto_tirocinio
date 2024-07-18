@@ -3,7 +3,9 @@ import 'package:dashboard_tirocinio/screens/commissioning/sensors_init_page.dart
 import 'package:flutter/material.dart';
 
 class NodeInitPage extends StatelessWidget {
-  const NodeInitPage({super.key});
+  final Map<String, dynamic> nodeData;
+
+  const NodeInitPage({super.key, required this.nodeData});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +45,7 @@ class NodeInitPage extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (context) => SensorsInitPage()),
+                            MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: nodeData)),
                                 (Route<dynamic> route) => false);
                       },
                       child: const Text('Continua'),

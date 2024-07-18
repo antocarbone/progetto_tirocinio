@@ -10,7 +10,7 @@ class RowStatusIndicator extends StatelessWidget {
     return Row(
       children: [
         Flexible(flex:1, child: indicator),
-        Flexible(flex: 4, child: Text(info))
+        Flexible(flex: 4, child: FittedBox(fit: BoxFit.fitWidth, child: Text(info, style: const TextStyle(fontSize: 20))))
       ],
     );
   }

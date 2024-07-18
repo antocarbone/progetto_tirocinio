@@ -1,16 +1,19 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
+import 'package:dashboard_tirocinio/screens/commissioning/commissioning_page.dart';
 import 'package:dashboard_tirocinio/screens/home_page.dart';
 import 'package:flutter/material.dart';
 
 class SensorsInitPage extends StatelessWidget {
-  const SensorsInitPage({super.key});
+  final Map<String, dynamic> nodeData;
+
+  const SensorsInitPage({super.key, required this.nodeData});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.orangeAccent.shade200,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomRight: Radius.circular(20), bottomLeft: Radius.circular(20))),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomRight: Radius.circular(20), bottomLeft: Radius.circular(20))),
         title: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -44,7 +47,7 @@ class SensorsInitPage extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (context) => HomePage()),
+                            MaterialPageRoute(builder: (context) => CommissioningPage(nodeData: nodeData)),
                                 (Route<dynamic> route) => false);
                       },
                       child: const Text('Continua'),
