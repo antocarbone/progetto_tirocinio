@@ -1,4 +1,3 @@
-import 'package:dashboard_tirocinio/screens/commissioning/node_init_page.dart';
 import 'package:dashboard_tirocinio/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -7,7 +6,9 @@ import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 
 class CommissioningPage extends StatefulWidget {
   final Map<String, dynamic> nodeData;
-  const CommissioningPage({super.key, required this.nodeData});
+  final String nodeName;
+  final List<Map<String, dynamic>> allSensors;
+  const CommissioningPage({super.key, required this.nodeData, required this.nodeName, required this.allSensors});
 
   @override
   State<CommissioningPage> createState() => _CommissioningPageState();
@@ -29,6 +30,8 @@ class _CommissioningPageState extends State<CommissioningPage> {
   bool? _deviceConnected;
   bool? _wifiScanned;
   bool? _brokerDataSent;
+
+  bool _isObscured = true;
 
   Future<bool> scanBleDevices() async {
     final device = widget.nodeData['name'];
@@ -134,35 +137,41 @@ class _CommissioningPageState extends State<CommissioningPage> {
                 status: _deviceScanned,
                 inProgressMessage: 'Sto cercando il device...',
                 successMessage: 'Dispositivo trovato!',
-                failureMessage: 'Qualcosa è andato storto!',
+                failureMessage: 'Dispositivo non trovato!',
                 futureFunction: scanBleDevices,
               ),
-              if (_deviceScanned != null)
-                buildStatusIndicator(
+              if (_deviceScanned == true) ... [buildStatusIndicator(
                   status: _deviceConnected,
-                  inProgressMessage: 'Mi sto connettendo al device...',
+                  inProgressMessage: 'Mi sto connettendo al dispositivo...',
                   successMessage: 'Device connesso!',
-                  failureMessage: 'Qualcosa è andato storto!',
+                  failureMessage: 'Connessione non riuscita!',
                   futureFunction: connectBleDevice,
-                ),
-              if (_deviceConnected != null)
-                buildStatusIndicator(
+                )] else ... [const RowStatusIndicator(
+                  indicator: Icon(Icons.circle_outlined),
+                  info: 'Connessione al dispositivo',
+                )],
+              if (_deviceConnected == true) ... [buildStatusIndicator(
                   status: _brokerDataSent,
                   inProgressMessage: 'Sto inviando il broker al device...',
                   successMessage: 'Invio riuscito!',
-                  failureMessage: 'Qualcosa è andato storto!',
+                  failureMessage: 'Invio del broker fallito!',
                   futureFunction: sendBrokerData,
-                ),
-              if (_brokerDataSent != null)
-                buildStatusIndicator(
+                )] else ... [const RowStatusIndicator(
+                indicator: Icon(Icons.circle_outlined),
+                info: 'Connessione del broker',
+              )],
+              if (_brokerDataSent == true) ... [buildStatusIndicator(
                   status: _wifiScanned,
                   inProgressMessage: 'Scansiono le reti wifi...',
                   successMessage: 'Reti trovate!',
-                  failureMessage: 'Qualcosa è andato storto!',
+                  failureMessage: 'Scansione delle reti wifi fallita!',
                   futureFunction: scanWifiNetworks,
-                ),
-              if (_wifiScanned != null)
-                Expanded(
+                )] else ... [const RowStatusIndicator(
+                indicator: Icon(Icons.circle_outlined),
+                info: 'Scansione delle reti wifi',
+              )],
+              if (_wifiScanned == true) ... [
+                  Expanded(
                   child: Container(
                     padding: EdgeInsets.all(defaultPadding),
                     child: Column(
@@ -170,11 +179,9 @@ class _CommissioningPageState extends State<CommissioningPage> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Flexible(
-                          child: Container(
-                            padding: EdgeInsets.all(defaultPadding),
-                            child: const Text('WiFi networks'),
-                          ),
+                        Container(
+                          padding: EdgeInsets.all(defaultPadding),
+                          child: const Center(child: Text('Reti WiFi', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold))),
                         ),
                         Expanded(
                           child: ListView.builder(
@@ -193,60 +200,10 @@ class _CommissioningPageState extends State<CommissioningPage> {
                                     showDialog(
                                       context: context,
                                       builder: (BuildContext context) {
-                                        return AlertDialog(
-                                          title: Text(selectedSsid),
-                                          content: TextField(
-                                            controller: _passwordController,
-                                            decoration: const InputDecoration(
-                                                hintText:
-                                                "Enter your input here"),
-                                          ),
-                                          actions: <Widget>[
-                                            TextButton(
-                                              child: const Text('Cancella'),
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                            TextButton(
-                                              child: const Text('Conferma'),
-                                              onPressed: () async {
-                                                Navigator.of(context).pop;
-
-                                                showDialog(
-                                                  context: context,
-                                                  builder: (BuildContext context) {
-                                                    return AlertDialog(
-                                                      content: FutureBuilder(
-                                                          future: provisionWifi(),
-                                                          builder: (context, snapshot) {
-                                                            if (snapshot.hasData) {
-                                                              return snapshot.data == true ? const Icon(Icons.check_circle) : const Icon(Icons.error_rounded);
-                                                          } else {
-                                                              return const CircularProgressIndicator();
-                                                            }
-                                                          }
-                                                      ),
-                                                      actions: <Widget>[
-                                                        TextButton(
-                                                          child: const Text('Termina'),
-                                                          onPressed: () async {
-                                                            Navigator.of(context)
-                                                                .pushAndRemoveUntil(
-                                                                MaterialPageRoute(
-                                                                    builder: (context) =>
-                                                                        HomePage()),
-                                                                    (Route<dynamic> route) =>
-                                                                false);
-                                                          },
-                                                        ),
-                                                      ],
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                            ),
-                                          ],
+                                        return WifiPasswordDialog(
+                                          selectedSsid: selectedSsid,
+                                          passwordController: _passwordController,
+                                          provisionWifi: provisionWifi,
                                         );
                                       },
                                     );
@@ -260,6 +217,24 @@ class _CommissioningPageState extends State<CommissioningPage> {
                     ),
                   ),
                 ),
+                ] else if (_deviceScanned == false || _deviceConnected == false || _brokerDataSent == false || _wifiScanned == false) ... [
+                Container(
+                  padding: EdgeInsets.all(defaultPadding),
+                  child: const Center(child: Text('Inizializzazione fallita', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold))),
+                ),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context)
+                          .pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  HomePage()),
+                              (Route<dynamic> route) =>
+                          false);
+                    },
+                    child: const Text('Torna alla Home'),
+                )
+              ]
             ],
           ),
         ),
@@ -286,17 +261,17 @@ class _CommissioningPageState extends State<CommissioningPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return RowStatusIndicator(
-              indicator: const CircularProgressIndicator(),
+              indicator: const CircularProgressIndicator(color: Colors.black),
               info: inProgressMessage,
             );
           } else if (snapshot.hasData && snapshot.data == true) {
             return RowStatusIndicator(
-              indicator: const Icon(Icons.check_circle),
+              indicator: const Material(child: Icon(Icons.check_circle)),
               info: successMessage,
             );
           } else {
             return RowStatusIndicator(
-              indicator: const Icon(Icons.close_rounded),
+              indicator: const Icon(Icons.error_rounded),
               info: failureMessage,
             );
           }
@@ -304,14 +279,130 @@ class _CommissioningPageState extends State<CommissioningPage> {
       );
     } else if (status == true) {
       return RowStatusIndicator(
-        indicator: const Icon(Icons.check_circle),
+        indicator: const Material(child: Icon(Icons.check_circle)),
         info: successMessage,
       );
     } else {
       return RowStatusIndicator(
-        indicator: const Icon(Icons.close_rounded),
+        indicator: const Icon(Icons.error_rounded),
         info: failureMessage,
       );
     }
   }
 }
+
+class WifiPasswordDialog extends StatefulWidget {
+  final String selectedSsid;
+  final TextEditingController passwordController;
+  final Future<bool?> Function() provisionWifi;
+
+  const WifiPasswordDialog({
+    required this.selectedSsid,
+    required this.passwordController,
+    required this.provisionWifi,
+  });
+
+  @override
+  _WifiPasswordDialogState createState() => _WifiPasswordDialogState();
+}
+
+class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
+  bool _isObscured = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.selectedSsid),
+      content: TextField(
+        obscureText: _isObscured,
+        controller: widget.passwordController,
+        decoration: InputDecoration(
+          suffixIcon: IconButton(
+            onPressed: () {
+              setState(() {
+                _isObscured = !_isObscured;
+              });
+            },
+            icon: _isObscured ? const Icon(Icons.visibility_off) : const Icon(Icons.visibility),
+          ),
+          hintText: "Enter your input here",
+        ),
+      ),
+      actions: <Widget>[
+        ElevatedButton(
+          child: const Text('Cancella'),
+          onPressed: () {
+            widget.passwordController.clear();
+            Navigator.of(context).pop();
+          },
+        ),
+        ElevatedButton(
+          child: const Text('Conferma'),
+          onPressed: () async {
+            Navigator.of(context).pop();
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return FutureBuilder(
+                  future: widget.provisionWifi(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return AlertDialog(
+                        title: snapshot.data == true
+                            ? const Center(
+                          child: FittedBox(
+                            child: Text('Dispositivo connesso!',
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          ),
+                        )
+                            : const Center(
+                          child: FittedBox(
+                            child: Text('Qualcosa è andato storto!',
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        content: snapshot.data == true
+                            ? const SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: FittedBox(child: Icon(Icons.check_circle)))
+                            : const SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: FittedBox(child: Icon(Icons.error_rounded))),
+                        actions: [
+                          Center(
+                            child: ElevatedButton(
+                              child: const Text('Termina'),
+                              onPressed: () async {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(builder: (context) => HomePage()),
+                                        (Route<dynamic> route) => false);
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    } else {
+                      return const AlertDialog(
+                        title: Center(
+                            child: FittedBox(
+                                child: Text('Attendi',
+                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
+                        content: SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: FittedBox(child: CircularProgressIndicator(color: Colors.black))),
+                      );
+                    }
+                  },
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
