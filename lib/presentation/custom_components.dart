@@ -62,12 +62,12 @@ class _RadiusChartState extends State<RadiusChart> {
             maximumValue: 50,
             radius: '70%',
             innerRadius: '90%',
-            enableTooltip: false,
             dataSource: chartData,
             cornerStyle: CornerStyle.bothCurve,
             xValueMapper: (_ChartData data, _) => data.x,
             yValueMapper: (_ChartData data, _) => data.y,
             pointColorMapper: (_ChartData data, _) => Colors.orangeAccent.shade400,
+            dataLabelMapper: (_ChartData data, _) => '',
             trackColor: Colors.orange.shade100,
             dataLabelSettings: const DataLabelSettings(isVisible: true))
       ],

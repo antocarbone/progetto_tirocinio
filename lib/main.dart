@@ -21,8 +21,8 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         colorSchemeSeed: Colors.orangeAccent,
       ),
-      //home: HomePage()
-      home: LoginPage(),
+      home: HomePage()
+      //home: LoginPage(),
     );
   }
 }
