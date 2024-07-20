@@ -15,6 +15,7 @@ class SensorsInitPage extends StatefulWidget {
 class _SensorsInitPageState extends State<SensorsInitPage> {
   List<Map<String, dynamic>> allSensors = [];
   List<TextEditingController> sensorsControllers = [];
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -63,23 +64,28 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                       padding: EdgeInsets.only(bottom: 20),
                       child: Text('Dai un nome ai sensori del nodo'),
                     ),
-                    ListView.builder(
-                      itemCount: allSensors.length,
-                      itemBuilder: (context, i) {
-                        return MyTextField(hint: allSensors[i]['topic'], controller: sensorsControllers[i]);
-                      },
-                      shrinkWrap: true,
+                    Form(
+                      key: _formKey,
+                      child: ListView.builder(
+                        itemCount: allSensors.length,
+                        itemBuilder: (context, i) {
+                          return MyTextField(hint: allSensors[i]['topic'], controller: sensorsControllers[i]);
+                        },
+                        shrinkWrap: true,
+                      ),
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        for(int i=0; i<sensorsControllers.length; i++){
-                          setState(() {
-                            allSensors[i]['name'] = sensorsControllers[i].text;
-                          });
+                        if(_formKey.currentState!.validate()) {
+                          for(int i=0; i<sensorsControllers.length; i++){
+                            setState(() {
+                              allSensors[i]['name'] = sensorsControllers[i].text;
+                            });
+                          }
+                          Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (context) => CommissioningPage(nodeData: widget.nodeData, nodeName: widget.nodeName, allSensors: allSensors)),
+                                  (Route<dynamic> route) => false);
                         }
-                        Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (context) => CommissioningPage(nodeData: widget.nodeData, nodeName: widget.nodeName, allSensors: allSensors)),
-                                (Route<dynamic> route) => false);
                       },
                       child: const Text('Continua'),
                     ),

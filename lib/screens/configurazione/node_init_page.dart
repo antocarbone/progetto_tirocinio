@@ -13,6 +13,7 @@ class NodeInitPage extends StatefulWidget {
 
 class _NodeInitPageState extends State<NodeInitPage> {
   final _nodeNameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -43,17 +44,17 @@ class _NodeInitPageState extends State<NodeInitPage> {
                       padding: EdgeInsets.only(bottom: 20),
                       child: Text('Dai un nome al nodo'),
                     ),
-                    ListView(
-                      shrinkWrap: true,
-                      children: [
-                        MyTextField(hint: widget.nodeData['name'], controller: _nodeNameController),
-                      ],
+                    Form(
+                      key: _formKey,
+                        child: MyTextField(hint: widget.nodeData['name'], controller: _nodeNameController)
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: widget.nodeData, nodeName: _nodeNameController.text == '' ? widget.nodeData['name'] : _nodeNameController.text)),
-                                (Route<dynamic> route) => false);
+                        if(_formKey.currentState!.validate()) {
+                          Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: widget.nodeData, nodeName: _nodeNameController.text == '' ? widget.nodeData['name'] : _nodeNameController.text)),
+                                  (Route<dynamic> route) => false);
+                        }
                       },
                       child: const Text('Continua'),
                     ),

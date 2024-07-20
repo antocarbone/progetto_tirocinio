@@ -31,6 +31,12 @@ class MyTextField extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Devi inserire un nome!';
+          }
+          return null;
+        },
         controller: controller,
         decoration: InputDecoration(
           labelText: hint,
