@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
+// WIDGET UTILE A MOSTRARE LO STATUS DEGLI STEP DELLA CONFIGURAZIONE DEL DISPOSITIVO
 class RowStatusIndicator extends StatelessWidget {
   final Widget indicator;
   final String info;
@@ -16,6 +18,8 @@ class RowStatusIndicator extends StatelessWidget {
   }
 }
 
+
+// TEXT FORM FIELD PERSONALIZZATO CON BORDI STONDATI E LABEL
 class MyTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -37,4 +41,44 @@ class MyTextField extends StatelessWidget {
       ),
     );
   }
+}
+
+
+class RadiusChart extends StatefulWidget {
+  const RadiusChart({super.key});
+
+  @override
+  State<RadiusChart> createState() => _RadiusChartState();
+}
+
+class _RadiusChartState extends State<RadiusChart> {
+  final List<_ChartData> chartData = [_ChartData('', 20)];
+  
+  @override
+  Widget build(BuildContext context) {
+    return SfCircularChart(
+      series: [
+        RadialBarSeries<_ChartData, String>(
+            maximumValue: 50,
+            radius: '70%',
+            innerRadius: '90%',
+            enableTooltip: false,
+            dataSource: chartData,
+            cornerStyle: CornerStyle.bothCurve,
+            xValueMapper: (_ChartData data, _) => data.x,
+            yValueMapper: (_ChartData data, _) => data.y,
+            pointColorMapper: (_ChartData data, _) => Colors.orangeAccent.shade400,
+            trackColor: Colors.orange.shade100,
+            dataLabelSettings: const DataLabelSettings(isVisible: true))
+      ],
+    );
+  }
+}
+
+
+class _ChartData {
+  _ChartData(this.x, this.y);
+
+  final String x;
+  final num? y;
 }

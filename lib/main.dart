@@ -1,6 +1,5 @@
-import 'package:dashboard_tirocinio/screens/commissioning/node_init_page.dart';
-import 'package:dashboard_tirocinio/screens/commissioning/sensors_init_page.dart';
-import 'package:dashboard_tirocinio/screens/home_page.dart';
+import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
+import 'package:dashboard_tirocinio/screens/dashboard.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -22,9 +21,8 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         colorSchemeSeed: Colors.orangeAccent,
       ),
-      home: HomePage()
-      //home: const SensorsInitPage(),
-      //home: const NodeInitPage(),
+      //home: HomePage()
+      home: LoginPage(),
     );
   }
 }

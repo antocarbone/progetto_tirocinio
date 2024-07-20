@@ -37,6 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter_esp_ble_prov: ^0.1.7
   qr_bar_code_scanner_dialog: ^0.0.5
+  syncfusion_flutter_charts: ^26.1.42
 
 dev_dependencies:
   flutter_test:

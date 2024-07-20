@@ -1,4 +1,4 @@
-import 'package:dashboard_tirocinio/screens/home_page.dart';
+import 'package:dashboard_tirocinio/screens/dashboard.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_esp_ble_prov/flutter_esp_ble_prov.dart';
@@ -30,8 +30,6 @@ class _CommissioningPageState extends State<CommissioningPage> {
   bool? _deviceConnected;
   bool? _wifiScanned;
   bool? _brokerDataSent;
-
-  bool _isObscured = true;
 
   Future<bool> scanBleDevices() async {
     final device = widget.nodeData['name'];
@@ -297,6 +295,7 @@ class WifiPasswordDialog extends StatefulWidget {
   final Future<bool?> Function() provisionWifi;
 
   const WifiPasswordDialog({
+    super.key,
     required this.selectedSsid,
     required this.passwordController,
     required this.provisionWifi,

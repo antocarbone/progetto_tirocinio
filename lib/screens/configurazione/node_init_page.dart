@@ -1,5 +1,5 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
-import 'package:dashboard_tirocinio/screens/commissioning/sensors_init_page.dart';
+import 'package:dashboard_tirocinio/screens/configurazione/sensors_init_page.dart';
 import 'package:flutter/material.dart';
 
 class NodeInitPage extends StatefulWidget {
