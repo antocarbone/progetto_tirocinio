@@ -1,5 +1,5 @@
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
-import 'package:dashboard_tirocinio/screens/dashboard.dart';
+import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:flutter/material.dart';
 
 void main() {

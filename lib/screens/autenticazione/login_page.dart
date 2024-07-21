@@ -1,4 +1,5 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
+import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -87,7 +88,16 @@ class _LoginPageState extends State<LoginPage> {
                           Padding(
                             padding: const EdgeInsets.only(top: 10),
                             child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  Navigator.of(
+                                      context)
+                                      .pushAndRemoveUntil(
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              HomePage()),
+                                          (Route<dynamic> route) =>
+                                      false);
+                                },
                                 child: const Text('LogIn')
                             ),
                           )
