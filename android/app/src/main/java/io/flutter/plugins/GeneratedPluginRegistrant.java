@@ -16,6 +16,11 @@ public final class GeneratedPluginRegistrant {
   private static final String TAG = "GeneratedPluginRegistrant";
   public static void registerWith(@NonNull FlutterEngine flutterEngine) {
     try {
+      flutterEngine.getPlugins().add(new com.hui.bluetooth_enable.BluetoothEnablePlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin bluetooth_enable_fork, com.hui.bluetooth_enable.BluetoothEnablePlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new how.virc.flutter_esp_ble_prov.FlutterEspBleProvPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin flutter_esp_ble_prov, how.virc.flutter_esp_ble_prov.FlutterEspBleProvPlugin", e);

@@ -1,4 +1,5 @@
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
+import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_esp_ble_prov/flutter_esp_ble_prov.dart';
@@ -16,6 +17,7 @@ class CommissioningPage extends StatefulWidget {
 
 class _CommissioningPageState extends State<CommissioningPage> {
   final _flutterEspBleProvPlugin = FlutterEspBleProv();
+  final Utils utils = Utils();
 
   final defaultPadding = 12.0;
 
@@ -33,8 +35,15 @@ class _CommissioningPageState extends State<CommissioningPage> {
 
   Future<bool> scanBleDevices() async {
     final device = widget.nodeData['name'];
-    final scannedDevices =
-    await _flutterEspBleProvPlugin.scanBleDevices(device);
+    final List<String> scannedDevices;
+    try {
+      scannedDevices = await _flutterEspBleProvPlugin.scanBleDevices(device);
+    } on Exception catch (e) {
+      setState(() {
+        _deviceScanned = false;
+      });
+      return false;
+    }
 
     if (scannedDevices.isNotEmpty) {
       setState(() {
@@ -85,9 +94,9 @@ class _CommissioningPageState extends State<CommissioningPage> {
   }
 
   Future<bool> scanWifiNetworks() async {
-    final scannedNetworks = await _flutterEspBleProvPlugin.scanWifiNetworks(
-        widget.nodeData['name'], widget.nodeData['pop']);
+    final scannedNetworks = await _flutterEspBleProvPlugin.scanWifiNetworks(widget.nodeData['name'], widget.nodeData['pop']);
     setState(() {
+      networks = [];
       networks = scannedNetworks;
     });
     if (networks.isNotEmpty) {
@@ -106,7 +115,11 @@ class _CommissioningPageState extends State<CommissioningPage> {
   Future<bool?> provisionWifi() async {
     final proofOfPossession = widget.nodeData['pop'];
     final passphrase = _passwordController.text;
-    return await _flutterEspBleProvPlugin.provisionWifi(widget.nodeData['name'], proofOfPossession, selectedSsid, passphrase);
+    try {
+      return await _flutterEspBleProvPlugin.provisionWifi(widget.nodeData['name'], proofOfPossession, selectedSsid, passphrase);
+    } on Exception catch (e) {
+      return false;
+    }
   }
 
   @override
@@ -177,9 +190,24 @@ class _CommissioningPageState extends State<CommissioningPage> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Container(
+                        Padding(
                           padding: EdgeInsets.all(defaultPadding),
-                          child: const Center(child: Text('Reti WiFi', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold))),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Reti WiFi', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                              IconButton(
+                                  onPressed: () async {
+                                    utils.showSnackBar(context, 'Attendi', 'Sto scansionando le reti wifi disponibili...', false);
+                                    if(await scanWifiNetworks()) {
+                                      utils.showSnackBar(context, 'Fatto!', 'Scansione terminata', false);
+                                    } else {
+                                      utils.showSnackBar(context, 'Ops', 'Qualcosa è andato storto', true);
+                                    }
+                                    },
+                                  icon: const Icon(Icons.refresh))
+                            ],
+                          ),
                         ),
                         Expanded(
                           child: ListView.builder(
@@ -226,7 +254,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
                           .pushAndRemoveUntil(
                           MaterialPageRoute(
                               builder: (context) =>
-                                  HomePage()),
+                                  const HomePage()),
                               (Route<dynamic> route) =>
                           false);
                     },
@@ -324,7 +352,7 @@ class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
             },
             icon: _isObscured ? const Icon(Icons.visibility_off) : const Icon(Icons.visibility),
           ),
-          hintText: "Enter your input here",
+          hintText: "Inserisci quì la password",
         ),
       ),
       actions: <Widget>[
