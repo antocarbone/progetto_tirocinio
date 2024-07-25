@@ -34,12 +34,6 @@ class MyTextField extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Devi inserire un nome!';
-          }
-          return null;
-        },
         controller: controller,
         decoration: InputDecoration(
           labelText: hint,
@@ -51,6 +45,31 @@ class MyTextField extends StatelessWidget {
     );
   }
 }
+
+class MyDropdownButton extends StatelessWidget {
+  final String value;
+  final void Function(String?) onChanged;
+  final List<DropdownMenuItem<String>> items;
+  const MyDropdownButton({super.key, required this.value, required this.onChanged, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(10)),
+
+      child: DropdownButtonFormField<String>(
+        value: value,
+        onChanged: onChanged,
+        items: items,
+        icon: const Icon(Icons.arrow_drop_down),
+        iconSize: 42,
+      ),
+    );
+  }
+}
+
 
 // WIDGET DEDICATO AL RADIUS CHART DELLA LIBRERIA SYNCFUSION-FLUTTER-CHARTS
 // PER RAPPRESENTARE LA LETTURA DEI SENSORI
@@ -253,6 +272,15 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
                       : _buildListView(),
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Center(
+                  child: TextButton(
+                    onPressed: () {},
+                    child: const Text('stato: online'),
+                  ),
+                ),
+              )
             ],
           ),
         ),

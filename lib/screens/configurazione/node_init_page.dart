@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 class NodeInitPage extends StatefulWidget {
   final Map<String, dynamic> nodeData;
   final Map<String, dynamic> deviceInfos;
+  final String nodeArea;
 
-  const NodeInitPage({super.key, required this.nodeData, required this.deviceInfos});
+  const NodeInitPage({super.key, required this.nodeData, required this.deviceInfos, required this.nodeArea});
 
   @override
   State<NodeInitPage> createState() => _NodeInitPageState();
@@ -53,7 +54,7 @@ class _NodeInitPageState extends State<NodeInitPage> {
                       onPressed: () {
                         if(_formKey.currentState!.validate()) {
                           Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: widget.nodeData, deviceInfos: widget.deviceInfos,  nodeName: _nodeNameController.text == '' ? widget.deviceInfos['name'] : _nodeNameController.text)),
+                              MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: widget.nodeData, deviceInfos: widget.deviceInfos,  nodeName: _nodeNameController.text == '' ? widget.deviceInfos['name'] : _nodeNameController.text, nodeArea: widget.nodeArea)),
                                   (Route<dynamic> route) => false);
                         }
                       },

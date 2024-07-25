@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 class Utils {
 
-
   void showSnackBar(BuildContext context, String title, String subtitle, bool error) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(backgroundColor: Colors.transparent,

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
-import 'package:dashboard_tirocinio/screens/configurazione/node_init_page.dart';
+import 'package:dashboard_tirocinio/screens/configurazione/area_assign_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_esp_ble_prov/flutter_esp_ble_prov.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
@@ -90,7 +90,9 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
       if (res != null) {
         Map<String, dynamic> resJson = jsonDecode(res);
         if (resJson['status'] == 'success') {
-          _deviceInfos = resJson;
+          setState(() {
+            _deviceInfos = resJson;
+          });
           return true;
         }
       }
@@ -120,7 +122,6 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
         }
       }
     } catch (e) {
-      print(e.toString());
       utils.showSnackBar(context, 'Errore', 'Invio dati broker fallito!', true);
     }
     return false;
@@ -183,9 +184,10 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
           if (_checkJsonDeviceInfo(_deviceInfos)) ...[
             ElevatedButton(
               onPressed: () {
+                print(_deviceInfos);
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
-                    builder: (context) => NodeInitPage(
+                    builder: (context) => AreaAssignPage(
                         nodeData: widget.nodeData, deviceInfos: _deviceInfos!),
                   ),
                   (Route<dynamic> route) => false,
@@ -200,6 +202,14 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              child: const Text('Chiudi'),
+            )
+          ] else ... [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                utils.showSnackBar(context, 'OPS', 'Info del device non corrette!', true);
+                },
               child: const Text('Chiudi'),
             )
           ]
@@ -235,20 +245,17 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
   bool _checkJsonDeviceInfo(Map<String, dynamic>? jsonInfos) {
     if (_gotInfos == true) {
       if (jsonInfos != null &&
+          jsonInfos['name'] != null &&
+          jsonInfos['area_of_installation'] != null &&
           jsonInfos['sensors'] != null &&
           jsonInfos['binary_sensors'] != null) {
         for (Map<String, dynamic> sensor in jsonInfos['sensors']) {
-          if (sensor['topic'] == null || sensor['unit'] == null) {
-            utils.showSnackBar(
-                context, 'OPS', 'Info del device non corrette!', true);
+          if (sensor['name'] == null || sensor['topic_suffix'] == null || sensor['type_of_measurement'] == null) {
             return false;
           }
         }
         for (Map<String, dynamic> binarySensor in jsonInfos['binary_sensors']) {
-          if (binarySensor['topic'] == null ||
-              binarySensor['device_class'] == null) {
-            utils.showSnackBar(
-                context, 'OPS', 'Info del device non corrette!', true);
+          if (binarySensor['name'] == null || binarySensor['topic_suffix'] == null || binarySensor['device_class'] == null) {
             return false;
           }
         }

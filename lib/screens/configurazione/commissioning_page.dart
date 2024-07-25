@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +9,11 @@ import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 
 class CommissioningPage extends StatefulWidget {
   final Map<String, dynamic> nodeData;
+  final String nodeArea;
   final String nodeName;
-  final List<Map<String, dynamic>> allSensors;
-  const CommissioningPage({super.key, required this.nodeData, required this.nodeName, required this.allSensors});
+  final List<Map<String, dynamic>> sensors;
+  final List<Map<String, dynamic>> binarySensors;
+  const CommissioningPage({super.key, required this.nodeData, required this.nodeArea, required this.nodeName, required this.sensors, required this.binarySensors});
 
   @override
   State<CommissioningPage> createState() => _CommissioningPageState();
@@ -28,7 +32,41 @@ class _CommissioningPageState extends State<CommissioningPage> {
 
   final _passwordController = TextEditingController();
 
+  bool? _newNodeInfoSent;
   bool? _wifiScanned;
+
+  Future<bool> sendNewNodeInfos() async {
+    String? res;
+    Map<String, dynamic> data = {'name': widget.nodeName, 'area_of_installation' : widget.nodeArea, 'sensors' : widget.sensors, 'binary_sensors' : widget.binarySensors};
+    try {
+      res = await _flutterEspBleProvPlugin.sendCustomData(
+          'node-data',
+          json.encode(data),
+          widget.nodeData['name'],
+          widget.nodeData['pop']);
+      if (res != null) {
+        Map<String, dynamic> resJson = json.decode(res);
+        if (resJson['status'] == 'success') {
+          setState(() {
+            _newNodeInfoSent = true;
+          });
+          return true;
+        } else {
+          utils.showSnackBar(context, 'Errore', 'Invio dati broker fallito!', true);
+          setState(() {
+            _newNodeInfoSent = false;
+          });
+          return false;
+        }
+      }
+    } catch (e) {
+      utils.showSnackBar(context, 'Errore', 'Invio dati broker fallito!', true);
+    }
+    setState(() {
+      _newNodeInfoSent = false;
+    });
+    return false;
+  }
 
   Future<bool> scanWifiNetworks() async {
     final scannedNetworks = await _flutterEspBleProvPlugin.scanWifiNetworks(widget.nodeData['name'], widget.nodeData['pop']);
@@ -82,12 +120,24 @@ class _CommissioningPageState extends State<CommissioningPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               buildStatusIndicator(
+                status: _newNodeInfoSent,
+                inProgressMessage: 'Invio le nuove info al nodo...',
+                successMessage: 'Info inviate!',
+                failureMessage: 'Invio fallito!',
+                futureFunction: sendNewNodeInfos,
+              ),
+              if(_newNodeInfoSent == true)... [buildStatusIndicator(
                 status: _wifiScanned,
                 inProgressMessage: 'Scansiono le reti wifi...',
                 successMessage: 'Reti trovate!',
                 failureMessage: 'Scansione delle reti wifi fallita!',
                 futureFunction: scanWifiNetworks,
-              ),
+              )] else ... [
+                const RowStatusIndicator(
+                  indicator: Material(child: Icon(Icons.circle_outlined)),
+                  info: 'Scansione delle reti wifi',
+                )
+              ],
               if (_wifiScanned == true) ... [
                   Expanded(
                   child: Container(
@@ -310,7 +360,7 @@ class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
                               child: const Text('Termina'),
                               onPressed: () async {
                                 Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(builder: (context) => HomePage()),
+                                    MaterialPageRoute(builder: (context) => const HomePage()),
                                         (Route<dynamic> route) => false);
                               },
                             ),
