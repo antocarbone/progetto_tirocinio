@@ -1,4 +1,3 @@
-import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:flutter/material.dart';
 
@@ -21,7 +20,7 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         colorSchemeSeed: Colors.orangeAccent,
       ),
-      home: HomePage()
+      home: const HomePage()
       //home: LoginPage(),
     );
   }

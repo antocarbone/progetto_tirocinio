@@ -1,6 +1,8 @@
+import 'package:dashboard_tirocinio/screens/dashboard/sensor_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 // WIDGET UTILE A MOSTRARE LO STATUS DEGLI STEP DELLA CONFIGURAZIONE DEL DISPOSITIVO
 class RowStatusIndicator extends StatelessWidget {
@@ -50,7 +52,8 @@ class MyTextField extends StatelessWidget {
   }
 }
 
-
+// WIDGET DEDICATO AL RADIUS CHART DELLA LIBRERIA SYNCFUSION-FLUTTER-CHARTS
+// PER RAPPRESENTARE LA LETTURA DEI SENSORI
 class RadiusChart extends StatelessWidget {
   RadiusChart({super.key});
   final List<ChartData> chartData = [ChartData('', 20)];
@@ -76,6 +79,7 @@ class RadiusChart extends StatelessWidget {
   }
 }
 
+// CLASSE RAPPRESENTANTE IL VALORE NEL GRAFICO
 class ChartData {
   ChartData(this.x, this.y);
 
@@ -83,7 +87,7 @@ class ChartData {
   final num? y;
 }
 
-
+// WIDGET CHE RAPPRESENTA UN SENSORE CON IL BAR CHART, IL VALORE LETTO E IL SUO NOME
 class MySensorInfo extends StatelessWidget {
   final double sensorValue;
   final String sensorName;
@@ -91,36 +95,41 @@ class MySensorInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 10,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: FittedBox(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  RadiusChart(),
-                  Text(
-                    '$sensorValue',
-                    style: const TextStyle(
-                      fontSize: 50,
-                      fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SensorDetailPage()));
+      },
+      child: Card(
+        elevation: 10,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: FittedBox(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    RadiusChart(),
+                    Text(
+                      '$sensorValue',
+                      style: const TextStyle(
+                        fontSize: 50,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              Text(
-                sensorName,
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
+                  ],
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                Text(
+                  sensorName,
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -128,7 +137,7 @@ class MySensorInfo extends StatelessWidget {
   }
 }
 
-
+// WIDGET CHE RAPPRESENTA UN SENSORE BINARIO CON IL SUO VALORE NOME E TIMESTAMP
 class MyBinarySensorInfo extends StatelessWidget {
   final bool sensorValue;
   final String sensorName;
@@ -167,6 +176,9 @@ class MyBinarySensorInfo extends StatelessWidget {
   }
 }
 
+
+// WIDGET CHE RAPPRESENTA UN NODO CON I SUOI SENSORI COME LISTA SCROLLABILE ORIZZONTALMENTE
+// OGNI SENSORE è CLICCABILE E PORTA ALLA PROPRIA PAGINA DI DETTAGLIO
 class MyNodeSummary extends StatefulWidget {
   final String nodeName;
 
@@ -274,6 +286,155 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
       _scrollController.offset + offset,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
+    );
+  }
+}
+
+// ICON BUTTON CON ICONA DELL'UTENTE CHE PERMETTE DI ESPANDERE
+// L'ANIMATED CONTAINER CHE MOSTRA I PULSANTI DI IMPOSTAZIONI E LOG-OUT
+class MyUserButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  const MyUserButton({super.key, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+        onPressed: onPressed,
+        icon: const Icon(Icons.person));
+  }
+}
+
+
+class SensorLineChart extends StatelessWidget {
+  final List<FlSpot> pointList;
+  const SensorLineChart({super.key, required this.pointList});
+
+  @override
+  Widget build(BuildContext context) {
+    return LineChart(
+        LineChartData(
+          lineTouchData: LineTouchData(
+            enabled: true,
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (LineBarSpot touchedSpot) => const Color(0x5E935A39),
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawHorizontalLine: true,
+            verticalInterval: 100,
+            horizontalInterval: 10,
+            getDrawingVerticalLine: (value) {
+              return const FlLine(
+                color: Color(0xFF673F28),
+                strokeWidth: 1,
+              );
+            },
+            getDrawingHorizontalLine: (value) {
+              return const FlLine(
+                color: Color(0xFF673F28),
+                strokeWidth: 1,
+              );
+            },
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 25,
+                getTitlesWidget: lineChartBottomTitleWidgets,
+                interval: 1,
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: lineChartLeftTitleWidgets,
+                reservedSize: 45,
+                interval: 1,
+              ),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border.all(color: const Color(0xFF673F28)),
+          ),
+          minX: 0,
+          maxX: 1440,
+          minY: 0,
+          maxY: 50,
+          lineBarsData: [
+            LineChartBarData(
+              spots: pointList,
+              isCurved: true,
+              color: const Color(0xFF673F28),
+              barWidth: 5,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(
+                show: true,
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                color: const Color(0x32673F28),
+              ),
+            ),
+          ],
+        )
+    );
+  }
+
+  Widget lineChartBottomTitleWidgets(double value, TitleMeta meta) {
+    const style = TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 14,
+      color: Color(0xFF673F28),
+    );
+    Widget text;
+    switch (value.toInt()) {
+      case 720:
+        text = const Text('Last 24 Hours', style: style);
+        break;
+      default:
+        text = const Text('', style: style);
+        break;
+    }
+
+    return SideTitleWidget(
+      axisSide: meta.axisSide,
+      child: text,
+    );
+  }
+
+  Widget lineChartLeftTitleWidgets(double value, TitleMeta meta) {
+    const style = TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 12,
+      color: Color(0xFF673F28),
+    );
+    String text;
+    switch (value.toInt()) {
+      case 0:
+        text = '0%';
+        break;
+      case 50:
+        text = '50%';
+        break;
+      case 100:
+        text = '100%';
+        break;
+      default:
+        return Container();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Text(text, style: style, textAlign: TextAlign.right),
     );
   }
 }

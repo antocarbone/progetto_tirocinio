@@ -1,14 +1,17 @@
-import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
-import 'package:dashboard_tirocinio/utility/utils.dart';
+import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
+import 'package:dashboard_tirocinio/utility/ble_connection_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_esp_ble_prov/flutter_esp_ble_prov.dart';
+import 'dart:convert';
+
 import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog.dart';
 import 'package:bluetooth_enable_fork/bluetooth_enable_fork.dart';
-import 'dart:convert';
 
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/configurazione/node_init_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/dettaglio_area_page.dart';
+import 'package:dashboard_tirocinio/utility/utils.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,29 +24,55 @@ class _HomePageState extends State<HomePage> {
   final _qrBarCodeScannerDialogPlugin = QrBarCodeScannerDialog();
   final Utils utils = Utils();
 
+  bool _isExpanded = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         backgroundColor: Colors.orangeAccent.shade200,
         shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.only(
                 bottomRight: Radius.circular(20),
                 bottomLeft: Radius.circular(20))),
-        title: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Home'),
-          ],
-        ),
+        title: const Text('Home'),
         actions: [
-          IconButton(
-              onPressed: () {
-                Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => LoginPage()),
-                    (Route<dynamic> route) => false);
-              },
-              icon: const Icon(Icons.person))
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: _isExpanded ? 80 : 0,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    shrinkWrap: true,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
+                        child: FittedBox(child: IconButton(onPressed: () {
+                          Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
+                        }, icon: const Icon(Icons.settings))),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: FittedBox(child: IconButton(onPressed: () {}, icon: const Icon(Icons.exit_to_app_rounded))),
+                      )
+                    ]
+                  ),
+                ),
+              )
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(5),
+            child: MyUserButton(onPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            }),
+          )
         ],
       ),
       drawer: Drawer(
@@ -52,9 +81,7 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                const Text('Menu',
-                    style:
-                        TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                const Text('Menu', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
                 if (!kIsWeb) ...[
                   ElevatedButton(
                     onPressed: () {
@@ -67,87 +94,29 @@ class _HomePageState extends State<HomePage> {
                             try {
                               nodeData = json.decode(code!);
                             } on Exception catch (e) {
-                              utils.showSnackBar(
-                                  context, 'OPS', 'QR code non valido!', true);
+                              utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
                               return;
                             }
 
-                            if (nodeData['name'] == null ||
-                                nodeData['pop'] == null ||
-                                nodeData['sensors'] == null ||
-                                nodeData['binary_sensors'] == null) {
-                              utils.showSnackBar(
-                                  context, 'OPS', 'QR code non valido!', true);
+                            if (nodeData['name'] == null || nodeData['pop'] == null) {
+                              utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
                               return;
                             } else {
-                              for (Map<String, dynamic> sensor
-                                  in nodeData['sensors']) {
-                                if (sensor['topic'] == null ||
-                                    sensor['unit'] == null) {
-                                  utils.showSnackBar(context, 'OPS',
-                                      'QR code non valido!', true);
-                                  return;
-                                }
-                              }
-
-                              for (Map<String, dynamic> binarySensor
-                                  in nodeData['binary_sensors']) {
-                                if (binarySensor['topic'] == null ||
-                                    binarySensor['device_class'] == null) {
-                                  utils.showSnackBar(context, 'OPS',
-                                      'QR code non valido!', true);
-                                  return;
-                                }
-                              }
                               BluetoothEnable.enableBluetooth.then((result) {
                                 if (result == "false") {
                                   showDialog(
                                     context: context,
                                     builder: (BuildContext context) {
-                                      return AlertDialog(
-                                        title: const Row(
-                                          children: [
-                                            Icon(Icons.warning),
-                                            Center(child: Text('Attenzione!'))
-                                          ],
-                                        ),
-                                        content: const Text(
-                                            'Accendi il bluetooth prima di proseguire!',
-                                            style: TextStyle(fontSize: 10),
-                                            textAlign: TextAlign.center),
-                                        actions: <Widget>[
-                                          Center(
-                                            child: ElevatedButton(
-                                              child: const Text('Procedi'),
-                                              onPressed: () async {
-                                                Navigator.of(context)
-                                                    .pushAndRemoveUntil(
-                                                        MaterialPageRoute(
-                                                            builder: (context) =>
-                                                                NodeInitPage(
-                                                                    nodeData:
-                                                                        nodeData)),
-                                                        (Route<dynamic>
-                                                                route) =>
-                                                            false);
-                                              },
-                                            ),
-                                          ),
-                                        ],
-                                      );
+                                      return BleConnectionDialog(nodeData: nodeData);
                                     },
                                   );
                                 }
-                                Navigator.of(context)
-                                    .pushAndRemoveUntil(
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            NodeInitPage(
-                                                nodeData:
-                                                nodeData)),
-                                        (Route<dynamic>
-                                    route) =>
-                                    false);
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return BleConnectionDialog(nodeData: nodeData);
+                                  },
+                                );
                               });
                             }
                           });
@@ -181,12 +150,10 @@ class _HomePageState extends State<HomePage> {
                   maxCrossAxisExtent: 300,
                   crossAxisSpacing: 5,
                   mainAxisSpacing: 5),
-              itemCount: 6,
+              itemCount: 8,
               itemBuilder: (context, index) {
                 return const GridTile(
-                  child: MyBinarySensorInfo(
-                      sensorValue: true, sensorName: 'Presenza'),
-                  //child: MySensorInfo(sensorValue: 20.5, sensorName: 'Temperatura'),
+                  child: MySensorInfo(sensorValue: 20.5, sensorName: 'temp')
                 );
               },
             ),

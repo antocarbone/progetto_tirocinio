@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 
 class SensorsInitPage extends StatefulWidget {
   final Map<String, dynamic> nodeData;
+  final Map<String, dynamic> deviceInfos;
   final String nodeName;
 
-  const SensorsInitPage({super.key, required this.nodeData, required this.nodeName});
+
+  const SensorsInitPage({super.key, required this.nodeData, required this.deviceInfos, required this.nodeName});
 
   @override
   State<SensorsInitPage> createState() => _SensorsInitPageState();
@@ -21,11 +23,11 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
   void initState() {
     super.initState();
     final List<Map<String, dynamic>> tmp = [];
-    for(Map<String, dynamic> sensor in widget.nodeData['sensors']) {
+    for(Map<String, dynamic> sensor in widget.deviceInfos['sensors']) {
       tmp.add({'name':'', 'topic' : sensor['topic'], 'unit' : sensor['unit']});
     }
 
-    for(Map<String, dynamic> sensor in widget.nodeData['binary_sensors']) {
+    for(Map<String, dynamic> sensor in widget.deviceInfos['binary_sensors']) {
       tmp.add({'name':'', 'topic' : sensor['topic'], 'device_class' : sensor['device_class']});
     }
 

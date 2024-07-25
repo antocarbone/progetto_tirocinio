@@ -28,70 +28,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
 
   final _passwordController = TextEditingController();
 
-  bool? _deviceScanned;
-  bool? _deviceConnected;
   bool? _wifiScanned;
-  bool? _brokerDataSent;
-
-  Future<bool> scanBleDevices() async {
-    final device = widget.nodeData['name'];
-    final List<String> scannedDevices;
-    try {
-      scannedDevices = await _flutterEspBleProvPlugin.scanBleDevices(device);
-    } on Exception catch (e) {
-      setState(() {
-        _deviceScanned = false;
-      });
-      return false;
-    }
-
-    if (scannedDevices.isNotEmpty) {
-      setState(() {
-        _deviceScanned = true;
-      });
-      return true;
-    } else {
-      setState(() {
-        _deviceScanned = false;
-      });
-      return false;
-    }
-  }
-
-  Future<bool> connectBleDevice() async {
-    try {
-      await _flutterEspBleProvPlugin.connectBleDevice(
-          widget.nodeData['name'], widget.nodeData['pop']);
-    } on Exception catch (e) {
-      setState(() {
-        _deviceConnected = false;
-      });
-      return false;
-    }
-    setState(() {
-      _deviceConnected = true;
-    });
-    return true;
-  }
-
-  Future<bool> sendBrokerData() async {
-    try {
-      await _flutterEspBleProvPlugin.sendCustomData(
-          'custom-data',
-          '{"broker":"mqtt://cavuotohome.duckdns.org","username":"iot","password":"iotunisa","port":1883}',
-          widget.nodeData['name'],
-          widget.nodeData['pop']);
-    } on Exception catch (e) {
-      setState(() {
-        _brokerDataSent = false;
-      });
-      return false;
-    }
-    setState(() {
-      _brokerDataSent = true;
-    });
-    return true;
-  }
 
   Future<bool> scanWifiNetworks() async {
     final scannedNetworks = await _flutterEspBleProvPlugin.scanWifiNetworks(widget.nodeData['name'], widget.nodeData['pop']);
@@ -145,42 +82,12 @@ class _CommissioningPageState extends State<CommissioningPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               buildStatusIndicator(
-                status: _deviceScanned,
-                inProgressMessage: 'Sto cercando il device...',
-                successMessage: 'Dispositivo trovato!',
-                failureMessage: 'Dispositivo non trovato!',
-                futureFunction: scanBleDevices,
+                status: _wifiScanned,
+                inProgressMessage: 'Scansiono le reti wifi...',
+                successMessage: 'Reti trovate!',
+                failureMessage: 'Scansione delle reti wifi fallita!',
+                futureFunction: scanWifiNetworks,
               ),
-              if (_deviceScanned == true) ... [buildStatusIndicator(
-                  status: _deviceConnected,
-                  inProgressMessage: 'Mi sto connettendo al dispositivo...',
-                  successMessage: 'Device connesso!',
-                  failureMessage: 'Connessione non riuscita!',
-                  futureFunction: connectBleDevice,
-                )] else ... [const RowStatusIndicator(
-                  indicator: Icon(Icons.circle_outlined),
-                  info: 'Connessione al dispositivo',
-                )],
-              if (_deviceConnected == true) ... [buildStatusIndicator(
-                  status: _brokerDataSent,
-                  inProgressMessage: 'Sto inviando il broker al device...',
-                  successMessage: 'Invio riuscito!',
-                  failureMessage: 'Invio del broker fallito!',
-                  futureFunction: sendBrokerData,
-                )] else ... [const RowStatusIndicator(
-                indicator: Icon(Icons.circle_outlined),
-                info: 'Connessione del broker',
-              )],
-              if (_brokerDataSent == true) ... [buildStatusIndicator(
-                  status: _wifiScanned,
-                  inProgressMessage: 'Scansiono le reti wifi...',
-                  successMessage: 'Reti trovate!',
-                  failureMessage: 'Scansione delle reti wifi fallita!',
-                  futureFunction: scanWifiNetworks,
-                )] else ... [const RowStatusIndicator(
-                indicator: Icon(Icons.circle_outlined),
-                info: 'Scansione delle reti wifi',
-              )],
               if (_wifiScanned == true) ... [
                   Expanded(
                   child: Container(
@@ -243,7 +150,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
                     ),
                   ),
                 ),
-                ] else if (_deviceScanned == false || _deviceConnected == false || _brokerDataSent == false || _wifiScanned == false) ... [
+                ] else if (_wifiScanned == false) ... [
                 Container(
                   padding: EdgeInsets.all(defaultPadding),
                   child: const Center(child: Text('Inizializzazione fallita', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold))),

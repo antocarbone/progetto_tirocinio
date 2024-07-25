@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 
 class NodeInitPage extends StatefulWidget {
   final Map<String, dynamic> nodeData;
+  final Map<String, dynamic> deviceInfos;
 
-  const NodeInitPage({super.key, required this.nodeData});
+  const NodeInitPage({super.key, required this.nodeData, required this.deviceInfos});
 
   @override
   State<NodeInitPage> createState() => _NodeInitPageState();
@@ -46,13 +47,13 @@ class _NodeInitPageState extends State<NodeInitPage> {
                     ),
                     Form(
                       key: _formKey,
-                        child: MyTextField(hint: widget.nodeData['name'], controller: _nodeNameController)
+                        child: MyTextField(hint: widget.deviceInfos['name'], controller: _nodeNameController)
                     ),
                     ElevatedButton(
                       onPressed: () {
                         if(_formKey.currentState!.validate()) {
                           Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: widget.nodeData, nodeName: _nodeNameController.text == '' ? widget.nodeData['name'] : _nodeNameController.text)),
+                              MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: widget.nodeData, deviceInfos: widget.deviceInfos,  nodeName: _nodeNameController.text == '' ? widget.deviceInfos['name'] : _nodeNameController.text)),
                                   (Route<dynamic> route) => false);
                         }
                       },
