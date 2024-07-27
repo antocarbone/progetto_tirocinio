@@ -1,4 +1,5 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
+import 'package:dashboard_tirocinio/screens/impostazioni/areas_manage_page.dart';
 import 'package:flutter/material.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -90,7 +91,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AreasManagePage()));
+                              },
                               child: const Text('Gestione aree', style: TextStyle(fontSize: 35))
                           ),
                         ),

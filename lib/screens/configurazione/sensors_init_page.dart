@@ -60,7 +60,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Center(
+          child: SingleChildScrollView(
             child: Card(
               elevation: 12,
               child: Padding(
@@ -70,9 +70,8 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                   children: [
                     const Padding(
                       padding: EdgeInsets.only(bottom: 20),
-                      child: Text('Dai un nome ai sensori del nodo', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text('Dai un nome ai sensori del nodo', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     ),
-                    const Divider(),
                     Form(
                       key: _formKey,
                       child: Column(
@@ -84,7 +83,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                           ListView.builder(
                             itemCount: sensors.length,
                             itemBuilder: (context, i) {
-                              return MyTextField(hint: sensors[i]['name'], controller: sensorsControllers[i]);
+                              return MyTextField(hint: sensors[i]['name'], controller: sensorsControllers[i], onlyNumbers: false);
                             },
                             shrinkWrap: true,
                           ),
@@ -96,7 +95,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                           ListView.builder(
                             itemCount: binarySensors.length,
                             itemBuilder: (context, i) {
-                              return MyTextField(hint: binarySensors[i]['name'], controller: binarySensorsControllers[i]);
+                              return MyTextField(hint: binarySensors[i]['name'], controller: binarySensorsControllers[i], onlyNumbers: false);
                             },
                             shrinkWrap: true,
                           ),

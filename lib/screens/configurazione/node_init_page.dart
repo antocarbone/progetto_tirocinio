@@ -48,7 +48,7 @@ class _NodeInitPageState extends State<NodeInitPage> {
                     ),
                     Form(
                       key: _formKey,
-                        child: MyTextField(hint: widget.deviceInfos['name'], controller: _nodeNameController)
+                        child: MyTextField(hint: widget.deviceInfos['name'], controller: _nodeNameController, onlyNumbers: false)
                     ),
                     ElevatedButton(
                       onPressed: () {

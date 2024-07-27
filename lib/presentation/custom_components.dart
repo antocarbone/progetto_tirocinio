@@ -1,3 +1,4 @@
+import 'package:dashboard_tirocinio/screens/dashboard/node_status_history.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/sensor_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -14,26 +15,54 @@ class RowStatusIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Flexible(flex:1, child: SizedBox(height: 20, width: 20, child: FittedBox(child: indicator))),
+        Flexible(flex:1, child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          child: SizedBox(height: 20, width: 20, child: FittedBox(child: indicator)),
+        )),
         Flexible(flex: 4, child: FittedBox(fit: BoxFit.fitWidth, child: Text(info, style: const TextStyle(fontSize: 20))))
       ],
     );
   }
 }
 
+// WIDGET PERSONALIZZATO UTILE A MOSTRARE DELLE INFO
+class MyGenericListElement extends StatelessWidget {
+  final Widget leading;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  const MyGenericListElement({super.key, required this.leading, required this.title, this.subtitle, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 10,
+      child: ListTile(
+        leading: leading,
+        title: Center(child: FittedBox(child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
+        subtitle: subtitle == null ? null : Center(child: Text(subtitle!, style: const TextStyle(fontSize: 15))),
+        trailing: trailing,
+      ),
+    );
+  }
+}
 
 // TEXT FORM FIELD PERSONALIZZATO CON BORDI STONDATI E LABEL
 class MyTextField extends StatelessWidget {
+  final String? Function(String?)? validator;
   final TextEditingController controller;
+  final bool onlyNumbers;
   final String hint;
 
-  const MyTextField({super.key, required this.hint, required this.controller});
+  const MyTextField({super.key, required this.hint, required this.controller, this.validator, required this.onlyNumbers});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
+        keyboardType: onlyNumbers ? TextInputType.number : null,
+        validator: validator,
         controller: controller,
         decoration: InputDecoration(
           labelText: hint,
@@ -46,6 +75,7 @@ class MyTextField extends StatelessWidget {
   }
 }
 
+// DROPDOWN BUTTON STILIZZATO
 class MyDropdownButton extends StatelessWidget {
   final String value;
   final void Function(String?) onChanged;
@@ -74,8 +104,9 @@ class MyDropdownButton extends StatelessWidget {
 // WIDGET DEDICATO AL RADIUS CHART DELLA LIBRERIA SYNCFUSION-FLUTTER-CHARTS
 // PER RAPPRESENTARE LA LETTURA DEI SENSORI
 class RadiusChart extends StatelessWidget {
-  RadiusChart({super.key});
-  final List<ChartData> chartData = [ChartData('', 20)];
+  final List<ChartData> chartData;
+  const RadiusChart({super.key, required this.chartData});
+
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +160,7 @@ class MySensorInfo extends StatelessWidget {
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    RadiusChart(),
+                    RadiusChart(chartData: [ChartData('', sensorValue)]),
                     Text(
                       '$sensorValue',
                       style: const TextStyle(
@@ -276,8 +307,15 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
                 padding: const EdgeInsets.only(top: 10),
                 child: Center(
                   child: TextButton(
-                    onPressed: () {},
-                    child: const Text('stato: online'),
+                    onPressed: () {
+                      showDialog(
+                          context: context,
+                          builder: (context) {
+                            return const NodeStatusHistory();
+                          }
+                      );
+                    },
+                    child: const Text('stato: online', style: TextStyle(color: Colors.black)),
                   ),
                 ),
               )
@@ -333,6 +371,8 @@ class MyUserButton extends StatelessWidget {
 }
 
 
+// LINE CHART DELLA LIBRERIA FL CHARTS UTILE A RAPPRESENTARE
+// LO STORICO DELLE LETTURE DEI SENSORI
 class SensorLineChart extends StatelessWidget {
   final List<FlSpot> pointList;
   const SensorLineChart({super.key, required this.pointList});

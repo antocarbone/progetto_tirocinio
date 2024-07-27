@@ -52,7 +52,8 @@ class _LoginPageState extends State<LoginPage> {
                               children: [
                                 MyTextField(
                                     hint: 'E-Mail',
-                                    controller: _mailController
+                                    controller: _mailController,
+                                    onlyNumbers: false
                                 ),
                                 TextFormField(
                                   obscureText: _isObscured,
