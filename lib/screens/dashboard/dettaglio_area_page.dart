@@ -1,6 +1,7 @@
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
-import 'package:dashboard_tirocinio/utility/ble_connection_dialog.dart';
+import 'package:dashboard_tirocinio/screens/configurazione/ble_connection_dialog.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog.dart';
@@ -23,6 +24,20 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
 
   double defaultPadding = 12;
   bool _isExpanded = false;
+
+  List<Sensor> sensors = [
+    Sensor(id: 0, nome: 'temp1', unitaMisura: '°C', lettura: 32.5),
+    Sensor(id: 1, nome: 'temp2', unitaMisura: '°C', lettura: 32.5),
+    Sensor(id: 2, nome: 'temp3', unitaMisura: '°C', lettura: 32.5),
+    Sensor(id: 3, nome: 'temp4', unitaMisura: '°C', lettura: 32.5),
+  ];
+
+  List<BinarySensor> binarySensors = [
+    BinarySensor(id: 0, nome: 'presenza1', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
+    BinarySensor(id: 1, nome: 'presenza2', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
+    BinarySensor(id: 2, nome: 'presenza3', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
+    BinarySensor(id: 3, nome: 'presenza4', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -155,8 +170,14 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
               ),
               itemCount: 6,
               itemBuilder: (context, index) {
-                return const GridTile(
-                  child: FittedBox(child: MyNodeSummary(nodeName: 'Sicurezza')),
+                return GridTile(
+                  child: FittedBox(child: MyNodeSummary(
+                    nodeName: 'Sicurezza',
+                    nodeStatus: 'online',
+                    sensors: sensors,
+                    binarySensors: binarySensors,
+                  )
+                  ),
                 );
               },
             ),

@@ -86,7 +86,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
     String? res;
     try {
       res = await _flutterEspBleProvPlugin.sendCustomData(
-          'get-device-info', ' ', name, pop);
+          'get-device-info', '{"index":-1,"operation":0}', name, pop);
       if (res != null) {
         Map<String, dynamic> resJson = jsonDecode(res);
         if (resJson['status'] == 'success') {
@@ -247,18 +247,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
       if (jsonInfos != null &&
           jsonInfos['name'] != null &&
           jsonInfos['area_of_installation'] != null &&
-          jsonInfos['sensors'] != null &&
-          jsonInfos['binary_sensors'] != null) {
-        for (Map<String, dynamic> sensor in jsonInfos['sensors']) {
-          if (sensor['name'] == null || sensor['topic_suffix'] == null || sensor['type_of_measurement'] == null) {
-            return false;
-          }
-        }
-        for (Map<String, dynamic> binarySensor in jsonInfos['binary_sensors']) {
-          if (binarySensor['name'] == null || binarySensor['topic_suffix'] == null || binarySensor['device_class'] == null) {
-            return false;
-          }
-        }
+          jsonInfos['num_of_sensors'] != null && jsonInfos['num_of_binary_sensors'] != null) {
         return true;
       } else {
         return false;

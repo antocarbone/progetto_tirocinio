@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:dashboard_tirocinio/screens/dashboard/node_status_history.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/sensor_detail_page.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 // WIDGET UTILE A MOSTRARE LO STATUS DEGLI STEP DELLA CONFIGURAZIONE DEL DISPOSITIVO
 class RowStatusIndicator extends StatelessWidget {
@@ -141,7 +145,8 @@ class ChartData {
 class MySensorInfo extends StatelessWidget {
   final double sensorValue;
   final String sensorName;
-  const MySensorInfo({super.key, required this.sensorValue, required this.sensorName});
+  final String sensorUnitMisura;
+  const MySensorInfo({super.key, required this.sensorValue, required this.sensorName, required this.sensorUnitMisura});
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +167,7 @@ class MySensorInfo extends StatelessWidget {
                   children: [
                     RadiusChart(chartData: [ChartData('', sensorValue)]),
                     Text(
-                      '$sensorValue',
+                      '$sensorValue $sensorUnitMisura',
                       style: const TextStyle(
                         fontSize: 50,
                         fontWeight: FontWeight.bold,
@@ -191,7 +196,10 @@ class MySensorInfo extends StatelessWidget {
 class MyBinarySensorInfo extends StatelessWidget {
   final bool sensorValue;
   final String sensorName;
-  const MyBinarySensorInfo({super.key, required this.sensorValue, required this.sensorName});
+  final String iconCode;
+  final String trueString;
+  final String falseString;
+  const MyBinarySensorInfo({super.key, required this.sensorValue, required this.sensorName, required this.iconCode, required this.trueString, required this.falseString});
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +211,7 @@ class MyBinarySensorInfo extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Flexible(flex: 5, child: Icon(sensorValue ? Icons.person : Icons.person_outline_rounded, size: 500)),
+              Flexible(flex: 5, child: Icon(MdiIcons.fromString(iconCode), size: 500)),
               Flexible(
                 flex: 2,
                 child: Padding(
@@ -213,6 +221,19 @@ class MyBinarySensorInfo extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 50,
                       fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              Flexible(
+                flex: 1,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    sensorValue ? trueString : falseString,
+                    style: const TextStyle(
+                      fontSize: 25,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -231,10 +252,16 @@ class MyBinarySensorInfo extends StatelessWidget {
 // OGNI SENSORE è CLICCABILE E PORTA ALLA PROPRIA PAGINA DI DETTAGLIO
 class MyNodeSummary extends StatefulWidget {
   final String nodeName;
+  final String nodeStatus;
+  final List<Sensor> sensors;
+  final List<BinarySensor> binarySensors;
 
   const MyNodeSummary({
     super.key,
     required this.nodeName,
+    required this.nodeStatus,
+    required this.sensors,
+    required this.binarySensors,
   });
 
   @override
@@ -290,7 +317,18 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
                         },
                       ),
                       Expanded(
-                        child: _buildListView(),
+                        child: SingleChildScrollView(
+                          controller: _scrollController,
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              if (widget.sensors.isNotEmpty)
+                                _buildListView(widget.sensors),
+                              if (widget.binarySensors.isNotEmpty)
+                                _buildListView(widget.binarySensors),
+                            ],
+                          ),
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.arrow_forward),
@@ -300,7 +338,17 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
                       ),
                     ],
                   )
-                      : _buildListView(),
+                      : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        if (widget.sensors.isNotEmpty)
+                          _buildListView(widget.sensors),
+                        if (widget.binarySensors.isNotEmpty)
+                          _buildListView(widget.binarySensors),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               Padding(
@@ -309,13 +357,14 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
                   child: TextButton(
                     onPressed: () {
                       showDialog(
-                          context: context,
-                          builder: (context) {
-                            return const NodeStatusHistory();
-                          }
+                        context: context,
+                        builder: (context) {
+                          return const NodeStatusHistory();
+                        },
                       );
                     },
-                    child: const Text('stato: online', style: TextStyle(color: Colors.black)),
+                    child: Text('stato: ${widget.nodeStatus}',
+                        style: const TextStyle(color: Colors.black)),
                   ),
                 ),
               )
@@ -326,19 +375,29 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
     );
   }
 
-  Widget _buildListView() {
+  Widget _buildListView(List<Object> list) {
     return ListView.builder(
-      controller: kIsWeb ? _scrollController : null,
-      scrollDirection: Axis.horizontal,
       shrinkWrap: true,
-      itemCount: 6,
+      scrollDirection: Axis.horizontal,
+      itemCount: list.length,
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: MySensorInfo(
-            sensorValue: 20.5,
-            sensorName: 'Temperatura ${index + 1}',
-          ),
+          child: list is List<Sensor>
+              ? MySensorInfo(
+            sensorValue: list[index].lettura,
+            sensorName: list[index].nome,
+            sensorUnitMisura: list[index].unitaMisura,
+          )
+              : list is List<BinarySensor>
+              ? MyBinarySensorInfo(
+            sensorValue: list[index].valore,
+            sensorName: list[index].nome,
+            iconCode: list[index].codiceIcona,
+            trueString: list[index].stringaTrue,
+            falseString: list[index].stringaFalse,
+          )
+              : null,
         );
       },
     );

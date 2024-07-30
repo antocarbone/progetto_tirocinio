@@ -1,5 +1,5 @@
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
-import 'package:dashboard_tirocinio/utility/ble_connection_dialog.dart';
+import 'package:dashboard_tirocinio/screens/configurazione/ble_connection_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_esp_ble_prov/flutter_esp_ble_prov.dart';
@@ -153,7 +153,7 @@ class _HomePageState extends State<HomePage> {
               itemCount: 8,
               itemBuilder: (context, index) {
                 return const GridTile(
-                  child: MySensorInfo(sensorValue: 20.5, sensorName: 'temp')
+                  child: MySensorInfo(sensorValue: 20.5, sensorName: 'temp', sensorUnitMisura: '°C')
                 );
               },
             ),

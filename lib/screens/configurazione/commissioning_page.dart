@@ -37,22 +37,46 @@ class _CommissioningPageState extends State<CommissioningPage> {
 
   Future<bool> sendNewNodeInfos() async {
     String? res;
-    Map<String, dynamic> data = {'name': widget.nodeName, 'area_of_installation' : widget.nodeArea, 'sensors' : widget.sensors, 'binary_sensors' : widget.binarySensors};
     try {
-      res = await _flutterEspBleProvPlugin.sendCustomData(
-          'node-data',
-          json.encode(data),
-          widget.nodeData['name'],
-          widget.nodeData['pop']);
+      Map<String, dynamic> data = {'index' : -1, 'operation' : 0, 'name': widget.nodeName, 'area_of_installation' : widget.nodeArea};
+      res = await _flutterEspBleProvPlugin.sendCustomData('set-device-info', json.encode(data), widget.nodeData['name'], widget.nodeData['pop']);
       if (res != null) {
         Map<String, dynamic> resJson = json.decode(res);
         if (resJson['status'] == 'success') {
+          for(int i = 0; i < widget.sensors.length; i++) {
+            Map<String, dynamic> data = {'index' : i, 'operation' : 1, 'name' : widget.sensors[i]['name']};
+            res = await _flutterEspBleProvPlugin.sendCustomData('set-device-info', json.encode(data), widget.nodeData['name'], widget.nodeData['pop']);
+            if (res != null) {
+              resJson = json.decode(res);
+              if (resJson['status'] != 'success') {
+                utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
+                setState(() {
+                  _newNodeInfoSent = false;
+                });
+                return false;
+              }
+            }
+          }
+          for(int i = 0; i < widget.binarySensors.length; i++) {
+            Map<String, dynamic> data = {'index' : i, 'operation' : 2, 'name' : widget.binarySensors[i]['name']};
+            res = await _flutterEspBleProvPlugin.sendCustomData('set-device-info', json.encode(data), widget.nodeData['name'], widget.nodeData['pop']);
+            if (res != null) {
+              resJson = json.decode(res);
+              if (resJson['status'] != 'success') {
+                utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
+                setState(() {
+                  _newNodeInfoSent = false;
+                });
+                return false;
+              }
+            }
+          }
           setState(() {
             _newNodeInfoSent = true;
           });
           return true;
         } else {
-          utils.showSnackBar(context, 'Errore', 'Invio dati broker fallito!', true);
+          utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
           setState(() {
             _newNodeInfoSent = false;
           });
@@ -60,7 +84,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
         }
       }
     } catch (e) {
-      utils.showSnackBar(context, 'Errore', 'Invio dati broker fallito!', true);
+      utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
     }
     setState(() {
       _newNodeInfoSent = false;
