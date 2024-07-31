@@ -4,7 +4,7 @@ import 'package:dashboard_tirocinio/screens/autenticazione/registration_page.dar
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:encrypt_shared_preferences/provider.dart';
 
 class UsersManagePage extends StatefulWidget {
   const UsersManagePage({super.key});
@@ -17,16 +17,17 @@ class _UsersManagePageState extends State<UsersManagePage> {
   List<User> utenti = [];
   bool _isExpanded = false;
   final Utils utils = Utils();
-  late SharedPreferences _prefs;
+  late EncryptedSharedPreferences _prefs;
   String? _token;
   String? _userType;
 
   void initPreferences() async {
-    SharedPreferences tmp;
+    EncryptedSharedPreferences tmp;
     String? tmpToken = '';
     String? tmpType = '';
     try {
-      tmp = await SharedPreferences.getInstance();
+      await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
+      tmp = EncryptedSharedPreferences.getInstance();
 
     } on Exception catch (e) {
       utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);

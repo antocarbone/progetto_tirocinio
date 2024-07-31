@@ -1,11 +1,10 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
-import 'package:dashboard_tirocinio/screens/autenticazione/registration_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:encrypt_shared_preferences/provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,17 +15,22 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final Utils utils = Utils();
-  late SharedPreferences _prefs;
+  late EncryptedSharedPreferences _prefs;
   final _formKey = GlobalKey<FormState>();
   final _mailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isObscured = true;
 
   void initPreferences() async {
-    SharedPreferences tmp = await SharedPreferences.getInstance();
-    setState(() {
-      _prefs = tmp;
-    });
+    try {
+      await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
+      EncryptedSharedPreferences tmp = EncryptedSharedPreferences.getInstance();
+      setState(() {
+        _prefs = tmp;
+      });
+    } catch (e) {
+      utils.showSnackBar(context, 'ERRORE', 'Errore durante l\'inizializzazione delle preferenze crittografate: $e', true);
+    }
   }
 
   @override
@@ -120,7 +124,7 @@ class _LoginPageState extends State<LoginPage> {
                                 if (_formKey.currentState!.validate()) {
                                   try {
                                     AuthUser loginData = await logIn(_mailController.text, _passwordController.text);
-                                    if(await _prefs.setString('token', loginData.token) && await _prefs.setString('tipo', loginData.isAdmin)) {
+                                    if(await _prefs.setString('token', loginData.token, notify: false) && await _prefs.setString('tipo', loginData.isAdmin, notify: false)) {
                                       Navigator.of(
                                           context)
                                           .pushAndRemoveUntil(

@@ -44,7 +44,7 @@ dependencies:
   http: ^1.2.2
   material_design_icons_flutter: ^7.0.7296
   email_validator: ^2.1.17
-  shared_preferences: ^2.2.3
+  encrypt_shared_preferences: ^0.7.3
 
 dev_dependencies:
   flutter_test:

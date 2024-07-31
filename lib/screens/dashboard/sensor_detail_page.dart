@@ -5,7 +5,7 @@ import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:encrypt_shared_preferences/provider.dart';
 
 class Notifica {
   Notifica(this.trigger, this.valore, this.isActive);
@@ -30,7 +30,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
   bool _isExpanded = false;
   final TextEditingController _valueController = TextEditingController();
   List<Notifica> notifiche = [];
-  late SharedPreferences _prefs;
+  late EncryptedSharedPreferences _prefs;
   String? _token;
   String? _userType;
 
@@ -85,11 +85,12 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
   }
 
   void initPreferences() async {
-    SharedPreferences tmp;
+    EncryptedSharedPreferences tmp;
     String? tmpToken = '';
     String? tmpType = '';
     try {
-      tmp = await SharedPreferences.getInstance();
+      await EncryptedSharedPreferences.initialize('Utils.encryptingKey');
+      tmp = EncryptedSharedPreferences.getInstance();
 
     } on Exception catch (e) {
       utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);

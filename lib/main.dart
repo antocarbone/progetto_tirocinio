@@ -1,7 +1,8 @@
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
+import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:encrypt_shared_preferences/provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,11 +16,12 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late SharedPreferences _prefs;
+  late EncryptedSharedPreferences _prefs;
   String? _token;
 
   void initPreferences() async {
-    SharedPreferences tmp = await SharedPreferences.getInstance();
+    await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
+    EncryptedSharedPreferences tmp = EncryptedSharedPreferences.getInstance();
 
     setState(() {
       _prefs = tmp;

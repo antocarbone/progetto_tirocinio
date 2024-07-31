@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 class Utils {
 
+  static String encryptingKey = 'ENCRYPTINGKEY16C';
+
   void showSnackBar(BuildContext context, String title, String subtitle, bool error) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(backgroundColor: Colors.transparent,

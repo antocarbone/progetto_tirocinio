@@ -11,7 +11,7 @@ import 'package:bluetooth_enable_fork/bluetooth_enable_fork.dart';
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/dettaglio_area_page.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:encrypt_shared_preferences/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,16 +24,17 @@ class _HomePageState extends State<HomePage> {
   final _qrBarCodeScannerDialogPlugin = QrBarCodeScannerDialog();
   bool _isExpanded = false;
   final Utils utils = Utils();
-  late SharedPreferences _prefs;
+  late EncryptedSharedPreferences _prefs;
   String? _token;
   String? _userType;
 
   void initPreferences() async {
-    SharedPreferences tmp;
+    EncryptedSharedPreferences tmp;
     String? tmpToken = '';
     String? tmpType = '';
     try {
-      tmp = await SharedPreferences.getInstance();
+      await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
+      tmp = EncryptedSharedPreferences.getInstance();
 
     } on Exception catch (e) {
       utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);

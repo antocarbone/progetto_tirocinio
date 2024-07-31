@@ -1,5 +1,4 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
-import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/users_manage_page.dart';
