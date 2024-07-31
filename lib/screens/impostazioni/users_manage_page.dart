@@ -1,19 +1,20 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
+import 'package:dashboard_tirocinio/screens/autenticazione/registration_page.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AreasManagePage extends StatefulWidget {
-  const AreasManagePage({super.key});
+class UsersManagePage extends StatefulWidget {
+  const UsersManagePage({super.key});
 
   @override
-  State<AreasManagePage> createState() => _AreasManagePageState();
+  State<UsersManagePage> createState() => _UsersManagePageState();
 }
 
-class _AreasManagePageState extends State<AreasManagePage> {
-  final TextEditingController _valueController = TextEditingController();
-  List<String> aree = [];
+class _UsersManagePageState extends State<UsersManagePage> {
+  List<User> utenti = [];
   bool _isExpanded = false;
   final Utils utils = Utils();
   late SharedPreferences _prefs;
@@ -49,10 +50,25 @@ class _AreasManagePageState extends State<AreasManagePage> {
     });
   }
 
+  void initUtenti() async {
+    List<User> tmpUtenti;
+    try {
+      tmpUtenti = await getAllUsers();
+    } on Exception catch (e) {
+      utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+      return;
+    }
+
+    setState(() {
+      utenti = tmpUtenti;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     initPreferences();
+    initUtenti();
   }
 
   @override
@@ -65,7 +81,7 @@ class _AreasManagePageState extends State<AreasManagePage> {
             borderRadius: BorderRadius.only(
                 bottomRight: Radius.circular(20),
                 bottomLeft: Radius.circular(20))),
-        title: const Text('Gestione Aree'),
+        title: const Text('Gestione Utenti'),
         actions: [
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -126,7 +142,7 @@ class _AreasManagePageState extends State<AreasManagePage> {
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 10),
                     child: Center(
-                        child: Text('Le tue aree',
+                        child: Text('Utenti registrati',
                             style: TextStyle(
                                 fontSize: 25, fontWeight: FontWeight.bold))),
                   ),
@@ -139,16 +155,30 @@ class _AreasManagePageState extends State<AreasManagePage> {
                             child: ListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: aree.length,
+                              itemCount: utenti.length,
                               itemBuilder: (context, index) {
                                 return MyGenericListElement(
-                                  leading: const Icon(Icons.room),
-                                  title: aree[index],
+                                  leading: const Icon(Icons.person),
+                                  title: '${utenti[index].nome} ${utenti[index].cognome}',
+                                  subtitle: utenti[index].mail,
                                   trailing: IconButton(
                                     onPressed: () {
-                                      setState(() {
-                                        aree.removeAt(index);
-                                      });
+                                        showDialog(
+                                            context: context, 
+                                            builder: (context) {
+                                              return ConfirmDelete(onConfirm: () async {
+                                                try {
+                                                  String res = await deleteUser(utenti[index].mail);
+                                                  utils.showSnackBar(context, 'UTENTE ELIMINATO', res, false);
+                                                  Navigator.of(context).pop();
+                                                  setState(() {utenti.removeAt(index);});
+                                                } catch (e) {
+                                                  utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                                  Navigator.of(context).pop();
+                                                }
+                                              });
+                                            }
+                                        );
                                     },
                                     icon: const Icon(Icons.delete_rounded),
                                   ),
@@ -159,21 +189,14 @@ class _AreasManagePageState extends State<AreasManagePage> {
                           Center(
                             child: ElevatedButton(
                               onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AddAreaDialog(
-                                      valueController: _valueController,
-                                      addNotifica: (String nome) {
-                                        setState(() {
-                                          aree.add(nome);
-                                        });
-                                      },
-                                    );
-                                  },
-                                );
+                                Navigator.of(
+                                    context)
+                                    .push(
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                        const RegistrationPage()));
                               },
-                              child: const Text('Aggiungi un\'area'),
+                              child: const Text('Registra un nuovo utente'),
                             ),
                           ),
                         ],
@@ -190,61 +213,32 @@ class _AreasManagePageState extends State<AreasManagePage> {
   }
 }
 
-class AddAreaDialog extends StatefulWidget {
-  final TextEditingController valueController;
-  final void Function(String nome) addNotifica;
-  const AddAreaDialog({super.key, required this.valueController, required this.addNotifica});
-
-  @override
-  State<AddAreaDialog> createState() => _AddAreaDialogState();
-}
-
-class _AddAreaDialogState extends State<AddAreaDialog> {
-  final _formKey = GlobalKey<FormState>();
+class ConfirmDelete extends StatelessWidget {
+  final VoidCallback onConfirm;
+  const ConfirmDelete({super.key, required this.onConfirm});
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Center(
-          child: Text('Dai un nome all\'area',
-              style: TextStyle(fontWeight: FontWeight.bold))),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 800),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Form(
-                key: _formKey,
-                child: MyTextField(
-                  validator: (valore) {
-                    if (valore == null || valore.isEmpty) {
-                      return 'Inserisci un nome!';
-                    }
-                    return null;
-                  },
-                  hint: 'Inserisci qui il nome',
-                  controller: widget.valueController,
-                  onlyNumbers: false,
-                ),
-              ),
-            ),
-          ],
-        ),
+          child: Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))
       ),
       actions: [
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                widget.addNotifica(widget.valueController.text);
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Aggiungi'),
-          ),
-        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancella')
+            ),
+            ElevatedButton(
+                onPressed: onConfirm,
+                child: const Text('Conferma')
+            ),
+          ],
+        )
       ],
     );
   }

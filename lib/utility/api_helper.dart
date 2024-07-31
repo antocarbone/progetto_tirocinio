@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
-import 'package:dashboard_tirocinio/screens/dashboard/node_status_history.dart';
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -18,26 +17,20 @@ HttpRequestHelper requestHelper = HttpRequestHelper();
 
 class AuthUser {
   final String token;
-  final String mail;
-  final bool isAdmin;
+  final String isAdmin;
 
-  AuthUser({required this.token, required this.mail, required this.isAdmin});
+  AuthUser({required this.token, required this.isAdmin});
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     final String token = json['token'];
-    final String mail = json['email'];
-    final bool isAdmin = bool.parse(json['admin']);
+    final String isAdmin = json['tipo'];
 
-    return AuthUser(token: token, mail: mail, isAdmin: isAdmin);
+    return AuthUser(token: token, isAdmin: isAdmin);
   }
 }
 
-
-/*
-  METODI PER LA GESTIONE DELL'AUTENTICAZIONE/REGISTRAZIONE DI UN UTENTE
- */
 Future<AuthUser> logIn(String mail, String password) async {
-  final response = await requestHelper.getRequest('/users/login', mail, password);
+  final response = await requestHelper.postRequest('/users/login', {"email":mail, "passw": password});
 
   if (response.statusCode == 200) {
     final user = AuthUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
@@ -48,12 +41,24 @@ Future<AuthUser> logIn(String mail, String password) async {
   }
 }
 
-Future<AuthUser> register(String username, String password) async {
-  final response = await requestHelper.getRequest('/users/add', username, password);
+Future<String> register(String nome, String cognome, String mail, String password, String isAdmin) async {
+  final response = await requestHelper.postRequest('/users/signup', {"email":mail, "passw" : password, "nome":nome, "cognome":cognome, "tipo":isAdmin});
 
   if (response.statusCode == 201) {
-    final user = AuthUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
-    return user;
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+Future<String> deleteUser(String mail) async {
+  final response = await requestHelper.deleteRequest('/users/', {"email":mail});
+
+  if (response.statusCode == 200) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
     throw Exception(error['error']);
@@ -85,16 +90,12 @@ class User {
 
     return User(mail: mail, nome: nome, cognome: cognome);
   }
-
-  MyGenericListElement toListElement() {
-    return MyGenericListElement(leading: const Icon(Icons.person), title: '$nome $cognome', subtitle: mail);
-  }
 }
 
 
 
 Future<User> getUserInfo(String mail, String password) async {
-  final response = await requestHelper.getRequest('/users/get_user_info', mail, password);
+  final response = await requestHelper.getRequest('/users/get_user_info');
 
   if (response.statusCode == 200) {
     final user = User.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
@@ -106,14 +107,14 @@ Future<User> getUserInfo(String mail, String password) async {
 }
 
 
-Future<List<MyGenericListElement>> getAllUsers(String mail, String password) async {
-  final response = await requestHelper.getRequest('/users/get_user_info', mail, password);
+Future<List<User>> getAllUsers() async {
+  final response = await requestHelper.getRequest('/users/all');
 
   if (response.statusCode == 200) {
-    final List<MyGenericListElement> users = [];
-    for(Map<String, dynamic> element in jsonDecode(response.body) as List<Map<String, dynamic>>) {
+    final List<User> users = [];
+    for(Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
       User user = User(mail: element['email'], nome: element['nome'], cognome: element['cognome']);
-      users.add(user.toListElement());
+      users.add(user);
     }
     return users;
   } else {
@@ -268,7 +269,7 @@ class Nodo {
 
 
 Future<List<MyNodeSummary>> getAllAreaNodes(String mail, String password) async {
-  final response = await requestHelper.getRequest('/users/get_user_info', mail, password);
+  final response = await requestHelper.getRequest('/users/get_user_info');
 
   if (response.statusCode == 200) {
     final List<MyNodeSummary> nodes = [];

@@ -1,3 +1,4 @@
+import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
 import 'package:dashboard_tirocinio/screens/configurazione/ble_connection_dialog.dart';
@@ -10,6 +11,7 @@ import 'dart:convert';
 
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DettaglioAreaPage extends StatefulWidget {
   const DettaglioAreaPage({super.key});
@@ -38,6 +40,45 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
     BinarySensor(id: 2, nome: 'presenza3', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
     BinarySensor(id: 3, nome: 'presenza4', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
   ];
+
+  late SharedPreferences _prefs;
+  String? _token;
+  String? _userType;
+
+  void initPreferences() async {
+    SharedPreferences tmp;
+    String? tmpToken = '';
+    String? tmpType = '';
+    try {
+      tmp = await SharedPreferences.getInstance();
+
+    } on Exception catch (e) {
+      utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+      return;
+    }
+
+    setState(() {
+      _prefs = tmp;
+    });
+
+    tmpToken = _prefs.getString('token');
+    tmpType = _prefs.getString('tipo');
+
+    setState(() {
+      _token = tmpToken!;
+      _userType = tmpType!;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPreferences();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +114,15 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: FittedBox(child: IconButton(onPressed: () {}, icon: const Icon(Icons.exit_to_app_rounded))),
+                          child: FittedBox(child: IconButton(
+                              onPressed: () async {
+                                await _prefs.clear();
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                        builder: (context) => const LoginPage()),
+                                        (Route<dynamic> route) => false);
+                              },
+                              icon: const Icon(Icons.exit_to_app_rounded))),
                         )
                       ]
                   ),

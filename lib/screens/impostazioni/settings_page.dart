@@ -1,6 +1,10 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
+import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/areas_manage_page.dart';
+import 'package:dashboard_tirocinio/screens/impostazioni/users_manage_page.dart';
+import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -10,7 +14,48 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  final Utils utils = Utils();
   bool _isExpanded = false;
+  late SharedPreferences _prefs;
+  String? _token;
+  String? _userType;
+
+
+  void initPreferences() async {
+    SharedPreferences tmp;
+    String? tmpToken = '';
+    String? tmpType = '';
+    try {
+      tmp = await SharedPreferences.getInstance();
+
+    } on Exception catch (e) {
+      utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+      return;
+    }
+
+    setState(() {
+      _prefs = tmp;
+    });
+
+    tmpToken = _prefs.getString('token');
+    tmpType = _prefs.getString('tipo');
+
+    setState(() {
+      _token = tmpToken!;
+      _userType = tmpType!;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPreferences();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +86,15 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: FittedBox(child: IconButton(onPressed: () {}, icon: const Icon(Icons.exit_to_app_rounded))),
+                          child: FittedBox(child: IconButton(
+                              onPressed: () async {
+                                await _prefs.clear();
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                        builder: (context) => const LoginPage()),
+                                        (Route<dynamic> route) => false);
+                              },
+                              icon: const Icon(Icons.exit_to_app_rounded))),
                         )
                       ]
                   ),
@@ -70,20 +123,22 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Padding(
+                  if (_userType == 'admin') ... [Padding(
                     padding: const EdgeInsets.only(bottom: 20),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const UsersManagePage()));
+                              },
                               child: const Text('Gestione utenti', style: TextStyle(fontSize: 35))
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  )],
                   Padding(
                     padding: const EdgeInsets.only(bottom: 20),
                     child: Row(
@@ -100,7 +155,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ],
                     ),
                   ),
-                  Row(
+            if (_userType == 'admin') ... [Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Expanded(
@@ -110,7 +165,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ),
                     ],
-                  ),
+                  )],
                 ],
               ),
             ),

@@ -1,5 +1,10 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
+import 'package:dashboard_tirocinio/screens/autenticazione/registration_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
+import 'package:dashboard_tirocinio/utility/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -10,9 +15,25 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final Utils utils = Utils();
+  late SharedPreferences _prefs;
+  final _formKey = GlobalKey<FormState>();
   final _mailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isObscured = true;
+
+  void initPreferences() async {
+    SharedPreferences tmp = await SharedPreferences.getInstance();
+    setState(() {
+      _prefs = tmp;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPreferences();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,15 +68,31 @@ class _LoginPageState extends State<LoginPage> {
                       Padding(
                         padding: const EdgeInsets.only(top: 30),
                         child: Form(
+                          key: _formKey,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                MyTextField(
+                                  MyTextField(
+                                    validator: (valore) {
+                                      if (valore == null || valore.isEmpty) {
+                                        return 'Inserisci una mail!';
+                                      }
+                                      if (!EmailValidator.validate(valore)) {
+                                        return 'Inserisci una mail valida!';
+                                      }
+                                      return null;
+                                    },
                                     hint: 'E-Mail',
                                     controller: _mailController,
                                     onlyNumbers: false
                                 ),
                                 TextFormField(
+                                  validator: (valore) {
+                                    if (valore == null || valore.isEmpty) {
+                                      return 'Inserisci una password!';
+                                    }
+                                    return null;
+                                  },
                                   obscureText: _isObscured,
                                     decoration: InputDecoration(
                                       labelText: 'Password',
@@ -75,34 +112,33 @@ class _LoginPageState extends State<LoginPage> {
                             )
                         ),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: TextButton(
-                                onPressed: () {},
-                                child: const Text('Registrati')
-                            ),
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: ElevatedButton(
+                              onPressed: () async {
+                                if (_formKey.currentState!.validate()) {
+                                  try {
+                                    AuthUser loginData = await logIn(_mailController.text, _passwordController.text);
+                                    if(await _prefs.setString('token', loginData.token) && await _prefs.setString('tipo', loginData.isAdmin)) {
+                                      Navigator.of(
+                                          context)
+                                          .pushAndRemoveUntil(
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                              const HomePage()),
+                                              (Route<dynamic> route) =>
+                                          false);
+                                    }
+                                  } on Exception catch (e) {
+                                    utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                    return;
+                                  }
+                                }
+                              },
+                              child: const Text('LogIn')
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.of(
-                                      context)
-                                      .pushAndRemoveUntil(
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              HomePage()),
-                                          (Route<dynamic> route) =>
-                                      false);
-                                },
-                                child: const Text('LogIn')
-                            ),
-                          )
-                        ],
+                        ),
                       )
                     ],
                   ),
