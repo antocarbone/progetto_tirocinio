@@ -1,7 +1,9 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/areas_manage_page.dart';
+import 'package:dashboard_tirocinio/screens/impostazioni/change_password_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/users_manage_page.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
@@ -14,7 +16,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final Utils utils = Utils();
   bool _isExpanded = false;
   late EncryptedSharedPreferences _prefs;
   String? _token;
@@ -30,7 +31,7 @@ class _SettingsPageState extends State<SettingsPage> {
       tmp = EncryptedSharedPreferences.getInstance();
 
     } on Exception catch (e) {
-      utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (context) => const LoginPage()),
@@ -76,15 +77,20 @@ class _SettingsPageState extends State<SettingsPage> {
               Expanded(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 100),
-                  width: _isExpanded ? 80 : 0,
+                  width: _isExpanded ? _userType == 'admin' ? 80 : 40 : 0,
                   child: ListView(
                       scrollDirection: Axis.horizontal,
                       shrinkWrap: true,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
-                          child: FittedBox(child: IconButton(onPressed: () {}, icon: const Icon(Icons.settings))),
-                        ),
+                        if (_userType == 'admin') ... [Padding(
+                            padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
+                            child: FittedBox(child: IconButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
+                                },
+                                icon: const Icon(Icons.settings))
+                            )
+                        )],
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: FittedBox(child: IconButton(
@@ -161,7 +167,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       Expanded(
                         child: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ChangePasswordPage()));
+                            },
                             child: const Text('Cambia password', style: TextStyle(fontSize: 35))
                         ),
                       ),

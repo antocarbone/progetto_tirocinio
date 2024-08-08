@@ -15,7 +15,6 @@ class BleConnectionDialog extends StatefulWidget {
 
 class _BleConnectionDialogState extends State<BleConnectionDialog> {
   final _flutterEspBleProvPlugin = FlutterEspBleProv();
-  final Utils utils = Utils();
   double defaultPadding = 12;
   bool? _deviceScanned;
   bool? _deviceConnected;
@@ -65,7 +64,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
         return true;
       }
     } catch (e) {
-      utils.showSnackBar(
+      Utils.showSnackBar(
           context, 'Errore', 'Scansione dispositivo fallita!', true);
     }
     return false;
@@ -76,7 +75,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
       await _flutterEspBleProvPlugin.connectBleDevice(name, pop);
       return true;
     } catch (e) {
-      utils.showSnackBar(
+      Utils.showSnackBar(
           context, 'Errore', 'Connessione al dispositivo fallita!', true);
     }
     return false;
@@ -97,7 +96,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
         }
       }
     } catch (e) {
-      utils.showSnackBar(
+      Utils.showSnackBar(
           context, 'Errore', 'Richiesta info dispositivo fallita!', true);
     }
     return false;
@@ -116,13 +115,13 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
         if (resJson['status'] == 'success') {
           return true;
         } else {
-          utils.showSnackBar(
+          Utils.showSnackBar(
               context, 'Errore', 'Invio dati broker fallito!', true);
           return false;
         }
       }
     } catch (e) {
-      utils.showSnackBar(context, 'Errore', 'Invio dati broker fallito!', true);
+      Utils.showSnackBar(context, 'Errore', 'Invio dati broker fallito!', true);
     }
     return false;
   }
@@ -208,7 +207,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                utils.showSnackBar(context, 'OPS', 'Info del device non corrette!', true);
+                Utils.showSnackBar(context, 'OPS', 'Info del device non corrette!', true);
                 },
               child: const Text('Chiudi'),
             )

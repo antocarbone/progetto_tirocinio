@@ -47,7 +47,6 @@ class _MyAppState extends State<MyApp> {
         colorSchemeSeed: Colors.orangeAccent,
       ),
       home: _token == null ? const LoginPage() : const HomePage(),
-      //home: LoginPage(),
     );
   }
 }

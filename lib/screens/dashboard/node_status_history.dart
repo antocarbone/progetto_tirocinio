@@ -12,7 +12,6 @@ class NodeStatusHistory extends StatefulWidget {
 }
 
 class _NodeStatusHistoryState extends State<NodeStatusHistory> {
-  Utils utils = Utils();
   DateFormat dateTimeFormatter = DateFormat('yyyy/MM/dd kk:mm');
   DateTime? _startDateTime;
   DateTime? _endDateTime;
@@ -46,7 +45,7 @@ class _NodeStatusHistoryState extends State<NodeStatusHistory> {
               if (pickedDateTime.isBefore(_endDateTime!)) {
                 _startDateTime = pickedDateTime;
               } else {
-                utils.showSnackBar(context, 'Attenzione', 'La data di inizio deve essere precedente a quella di fine', true);
+                Utils.showSnackBar(context, 'Attenzione', 'La data di inizio deve essere precedente a quella di fine', true);
               }
             } else {
               _startDateTime = pickedDateTime;
@@ -56,7 +55,7 @@ class _NodeStatusHistoryState extends State<NodeStatusHistory> {
               if (pickedDateTime.isAfter(_startDateTime!)) {
                 _endDateTime = pickedDateTime;
               } else {
-                utils.showSnackBar(context, 'Attenzione', 'La data di fine deve essere successiva a quella di inizio', true);
+                Utils.showSnackBar(context, 'Attenzione', 'La data di fine deve essere successiva a quella di inizio', true);
               }
             } else {
               _endDateTime = pickedDateTime;

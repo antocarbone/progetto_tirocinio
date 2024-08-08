@@ -27,7 +27,6 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
   final _formKey = GlobalKey<FormState>();
 
   final _flutterEspBleProvPlugin = FlutterEspBleProv();
-  final Utils utils = Utils();
 
   Future<String?> getDeviceInfos(String name, String pop, int index, int operation) async {
     String? res;
@@ -43,7 +42,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
         }
       }
     } catch (e) {
-      utils.showSnackBar(
+      Utils.showSnackBar(
           context, 'Errore', 'Richiesta info dispositivo fallita!', true);
     }
     return null;
@@ -57,7 +56,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
           sensors.add({'name': defaultName});
         });
       } else {
-        utils.showSnackBar(context, 'ERRORE', 'si è verificaato un problema nei dati dei sensori', true);
+        Utils.showSnackBar(context, 'ERRORE', 'si è verificaato un problema nei dati dei sensori', true);
       }
     }
 
@@ -68,7 +67,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
           binarySensors.add({'name': defaultName});
         });
       } else {
-        utils.showSnackBar(context, 'ERRORE', 'si è verificaato un problema nei dati sei sensori binari', true);
+        Utils.showSnackBar(context, 'ERRORE', 'si è verificaato un problema nei dati sei sensori binari', true);
       }
     }
   }
@@ -87,6 +86,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         backgroundColor: Colors.orangeAccent.shade200,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomRight: Radius.circular(20), bottomLeft: Radius.circular(20))),
         title: const Row(

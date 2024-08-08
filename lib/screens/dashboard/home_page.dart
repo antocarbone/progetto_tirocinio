@@ -1,6 +1,7 @@
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
 import 'package:dashboard_tirocinio/screens/configurazione/ble_connection_dialog.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
@@ -23,10 +24,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _qrBarCodeScannerDialogPlugin = QrBarCodeScannerDialog();
   bool _isExpanded = false;
-  final Utils utils = Utils();
   late EncryptedSharedPreferences _prefs;
   String? _token;
   String? _userType;
+  List<Area> userAreas = [];
 
   void initPreferences() async {
     EncryptedSharedPreferences tmp;
@@ -37,7 +38,7 @@ class _HomePageState extends State<HomePage> {
       tmp = EncryptedSharedPreferences.getInstance();
 
     } on Exception catch (e) {
-      utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (context) => const LoginPage()),
@@ -55,6 +56,15 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _token = tmpToken!;
       _userType = tmpType!;
+    });
+
+    //initUserAreas();
+  }
+
+  void initUserAreas() async {
+    List<Area> tmp = await getAllUserAreas(_token!, "tmp");
+    setState(() {
+      userAreas = tmp;
     });
   }
 
@@ -82,32 +92,33 @@ class _HomePageState extends State<HomePage> {
               Expanded(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 100),
-                  width: _isExpanded ? 80 : 0,
+                  width: _isExpanded ? _userType == 'admin' ? 80 : 40 : 0,
                   child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    shrinkWrap: true,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
-                        child: FittedBox(child: IconButton(onPressed: () {
-                          Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
-                        }, icon: const Icon(Icons.settings))),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: FittedBox(child: IconButton(
-                            onPressed: () async {
-                              await _prefs.clear();
-                              Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(
-                                      builder: (context) => const LoginPage()),
-                                      (Route<dynamic> route) => false);
-                            },
-                            icon: const Icon(Icons.exit_to_app_rounded)
+                      scrollDirection: Axis.horizontal,
+                      shrinkWrap: true,
+                      children: [
+                        if (_userType == 'admin') ... [Padding(
+                            padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
+                            child: FittedBox(child: IconButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
+                                },
+                                icon: const Icon(Icons.settings))
+                            )
+                        )],
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: FittedBox(child: IconButton(
+                              onPressed: () async {
+                                await _prefs.clear();
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                        builder: (context) => const LoginPage()),
+                                        (Route<dynamic> route) => false);
+                              },
+                              icon: const Icon(Icons.exit_to_app_rounded))),
                         )
-                        ),
-                      )
-                    ]
+                      ]
                   ),
                 ),
               )
@@ -115,7 +126,7 @@ class _HomePageState extends State<HomePage> {
           ),
           Padding(
             padding: const EdgeInsets.all(5),
-            child: MyUserButton(onPressed: () async{
+            child: MyUserButton(onPressed: () {
               setState(() {
                 _isExpanded = !_isExpanded;
               });
@@ -142,12 +153,12 @@ class _HomePageState extends State<HomePage> {
                             try {
                               nodeData = json.decode(code!);
                             } on Exception catch (e) {
-                              utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
+                              Utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
                               return;
                             }
 
                             if (nodeData['name'] == null || nodeData['pop'] == null) {
-                              utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
+                              Utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
                               return;
                             } else {
                               BluetoothEnable.enableBluetooth.then((result) {

@@ -22,7 +22,6 @@ class DettaglioAreaPage extends StatefulWidget {
 
 class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
   final _qrBarCodeScannerDialogPlugin = QrBarCodeScannerDialog();
-  final Utils utils = Utils();
 
   double defaultPadding = 12;
   bool _isExpanded = false;
@@ -52,9 +51,8 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
-      utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (context) => const LoginPage()),
@@ -99,12 +97,12 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
               Expanded(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 100),
-                  width: _isExpanded ? 80 : 0,
+                  width: _isExpanded ? _userType == 'admin' ? 80 : 40 : 0,
                   child: ListView(
                       scrollDirection: Axis.horizontal,
                       shrinkWrap: true,
                       children: [
-                        Padding(
+                        if (_userType == 'admin') ... [Padding(
                           padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
                           child: FittedBox(child: IconButton(
                               onPressed: () {
@@ -112,7 +110,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                                 },
                               icon: const Icon(Icons.settings))
                           )
-                        ),
+                        )],
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: FittedBox(child: IconButton(
@@ -159,13 +157,13 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
 
                             try {
                               nodeData = json.decode(code!);
-                            } on Exception catch (e) {
-                              utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
+                            } catch (e) {
+                              Utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
                               return;
                             }
 
                             if (nodeData['name'] == null || nodeData['pop'] == null) {
-                              utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
+                              Utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
                               return;
                             } else {
                               BluetoothEnable.enableBluetooth.then((result) {

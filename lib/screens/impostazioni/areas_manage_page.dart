@@ -1,5 +1,6 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
@@ -13,9 +14,7 @@ class AreasManagePage extends StatefulWidget {
 
 class _AreasManagePageState extends State<AreasManagePage> {
   final TextEditingController _valueController = TextEditingController();
-  List<String> aree = [];
-  bool _isExpanded = false;
-  final Utils utils = Utils();
+  List<Area> aree = [];
   late EncryptedSharedPreferences _prefs;
   String? _token;
   String? _userType;
@@ -29,7 +28,7 @@ class _AreasManagePageState extends State<AreasManagePage> {
       tmp = EncryptedSharedPreferences.getInstance();
 
     } on Exception catch (e) {
-      utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (context) => const LoginPage()),
@@ -47,6 +46,22 @@ class _AreasManagePageState extends State<AreasManagePage> {
     setState(() {
       _token = tmpToken!;
       _userType = tmpType!;
+    });
+
+    initAreas();
+  }
+
+  void initAreas() async {
+    List<Area> tmp;
+    try {
+      tmp = await getAllAreas(_token!);
+    } on Exception catch (e) {
+      Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+      return;
+    }
+
+    setState(() {
+      aree = tmp;
     });
   }
 
@@ -67,53 +82,6 @@ class _AreasManagePageState extends State<AreasManagePage> {
                 bottomRight: Radius.circular(20),
                 bottomLeft: Radius.circular(20))),
         title: const Text('Gestione Aree'),
-        actions: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 100),
-                  width: _isExpanded ? 80 : 0,
-                  child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      shrinkWrap: true,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              top: 10, bottom: 10, right: 5),
-                          child: FittedBox(
-                              child: IconButton(
-                                  onPressed: () {},
-                                  icon: const Icon(Icons.settings))),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: FittedBox(
-                              child: IconButton(
-                                  onPressed: () async {
-                                    await _prefs.clear();
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                            builder: (context) => const LoginPage()),
-                                            (Route<dynamic> route) => false);
-                                  },
-                                  icon: const Icon(Icons.exit_to_app_rounded))),
-                        )
-                      ]),
-                ),
-              )
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(5),
-            child: MyUserButton(onPressed: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            }),
-          )
-        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -144,12 +112,25 @@ class _AreasManagePageState extends State<AreasManagePage> {
                               itemBuilder: (context, index) {
                                 return MyGenericListElement(
                                   leading: const Icon(Icons.room),
-                                  title: aree[index],
+                                  title: aree[index].nome,
                                   trailing: IconButton(
                                     onPressed: () {
-                                      setState(() {
-                                        aree.removeAt(index);
-                                      });
+                                      showDialog(
+                                          context: context,
+                                          builder: (context) {
+                                            return ConfirmDelete(onConfirm: () async {
+                                              try {
+                                                String res = await deleteArea(aree[index].nome, _token!);
+                                                Utils.showSnackBar(context, 'AREA ELIMINATA', res, false);
+                                                Navigator.of(context).pop();
+                                                initAreas();
+                                              } catch (e) {
+                                                Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                                Navigator.of(context).pop();
+                                              }
+                                            });
+                                          }
+                                      );
                                     },
                                     icon: const Icon(Icons.delete_rounded),
                                   ),
@@ -164,11 +145,10 @@ class _AreasManagePageState extends State<AreasManagePage> {
                                   context: context,
                                   builder: (context) {
                                     return AddAreaDialog(
+                                      token: _token!,
                                       valueController: _valueController,
-                                      addNotifica: (String nome) {
-                                        setState(() {
-                                          aree.add(nome);
-                                        });
+                                      addArea: () {
+                                        initAreas();
                                       },
                                     );
                                   },
@@ -193,8 +173,9 @@ class _AreasManagePageState extends State<AreasManagePage> {
 
 class AddAreaDialog extends StatefulWidget {
   final TextEditingController valueController;
-  final void Function(String nome) addNotifica;
-  const AddAreaDialog({super.key, required this.valueController, required this.addNotifica});
+  final VoidCallback addArea;
+  final String token;
+  const AddAreaDialog({super.key, required this.valueController, required this.addArea, required this.token});
 
   @override
   State<AddAreaDialog> createState() => _AddAreaDialogState();
@@ -237,15 +218,53 @@ class _AddAreaDialogState extends State<AddAreaDialog> {
       actions: [
         Center(
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (_formKey.currentState!.validate()) {
-                widget.addNotifica(widget.valueController.text);
+                try {
+                  String res = await addArea(widget.valueController.text  , widget.token);
+                  print(res);
+                  Utils.showSnackBar(context, 'AREA AGGIUNTA', res, false);
+                } on Exception catch (e) {
+                  Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                }
+                widget.addArea();
                 Navigator.of(context).pop();
               }
             },
             child: const Text('Aggiungi'),
           ),
         ),
+      ],
+    );
+  }
+}
+
+class ConfirmDelete extends StatelessWidget {
+  final VoidCallback onConfirm;
+  const ConfirmDelete({super.key, required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Center(
+          child: Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))
+      ),
+      actions: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancella')
+            ),
+            ElevatedButton(
+                onPressed: onConfirm,
+                child: const Text('Conferma')
+            ),
+          ],
+        )
       ],
     );
   }

@@ -1,6 +1,7 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/registration_page.dart';
+import 'package:dashboard_tirocinio/screens/impostazioni/user_detail_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
@@ -15,8 +16,6 @@ class UsersManagePage extends StatefulWidget {
 
 class _UsersManagePageState extends State<UsersManagePage> {
   List<User> utenti = [];
-  bool _isExpanded = false;
-  final Utils utils = Utils();
   late EncryptedSharedPreferences _prefs;
   String? _token;
   String? _userType;
@@ -30,7 +29,7 @@ class _UsersManagePageState extends State<UsersManagePage> {
       tmp = EncryptedSharedPreferences.getInstance();
 
     } on Exception catch (e) {
-      utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (context) => const LoginPage()),
@@ -49,14 +48,15 @@ class _UsersManagePageState extends State<UsersManagePage> {
       _token = tmpToken!;
       _userType = tmpType!;
     });
+    initUtenti();
   }
 
   void initUtenti() async {
     List<User> tmpUtenti;
     try {
-      tmpUtenti = await getAllUsers();
+      tmpUtenti = await getAllUsers(_token!);
     } on Exception catch (e) {
-      utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+      Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
       return;
     }
 
@@ -69,7 +69,6 @@ class _UsersManagePageState extends State<UsersManagePage> {
   void initState() {
     super.initState();
     initPreferences();
-    initUtenti();
   }
 
   @override
@@ -83,53 +82,6 @@ class _UsersManagePageState extends State<UsersManagePage> {
                 bottomRight: Radius.circular(20),
                 bottomLeft: Radius.circular(20))),
         title: const Text('Gestione Utenti'),
-        actions: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 100),
-                  width: _isExpanded ? 80 : 0,
-                  child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      shrinkWrap: true,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              top: 10, bottom: 10, right: 5),
-                          child: FittedBox(
-                              child: IconButton(
-                                  onPressed: () {},
-                                  icon: const Icon(Icons.settings))),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: FittedBox(
-                              child: IconButton(
-                                  onPressed: () async {
-                                    await _prefs.clear();
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                            builder: (context) => const LoginPage()),
-                                            (Route<dynamic> route) => false);
-                                  },
-                                  icon: const Icon(Icons.exit_to_app_rounded))),
-                        )
-                      ]),
-                ),
-              )
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(5),
-            child: MyUserButton(onPressed: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            }),
-          )
-        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -158,30 +110,35 @@ class _UsersManagePageState extends State<UsersManagePage> {
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: utenti.length,
                               itemBuilder: (context, index) {
-                                return MyGenericListElement(
-                                  leading: const Icon(Icons.person),
-                                  title: '${utenti[index].nome} ${utenti[index].cognome}',
-                                  subtitle: utenti[index].mail,
-                                  trailing: IconButton(
-                                    onPressed: () {
-                                        showDialog(
-                                            context: context, 
-                                            builder: (context) {
-                                              return ConfirmDelete(onConfirm: () async {
-                                                try {
-                                                  String res = await deleteUser(utenti[index].mail);
-                                                  utils.showSnackBar(context, 'UTENTE ELIMINATO', res, false);
-                                                  Navigator.of(context).pop();
-                                                  setState(() {utenti.removeAt(index);});
-                                                } catch (e) {
-                                                  utils.showSnackBar(context, 'ERRORE', e.toString(), true);
-                                                  Navigator.of(context).pop();
-                                                }
-                                              });
-                                            }
-                                        );
-                                    },
-                                    icon: const Icon(Icons.delete_rounded),
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => UserDetailPage(utente: utenti[index])));
+                                  },
+                                  child: MyGenericListElement(
+                                    leading: const Icon(Icons.person),
+                                    title: '${utenti[index].nome} ${utenti[index].cognome}',
+                                    subtitle: utenti[index].mail,
+                                    trailing: IconButton(
+                                      onPressed: () {
+                                          showDialog(
+                                              context: context, 
+                                              builder: (context) {
+                                                return ConfirmDelete(onConfirm: () async {
+                                                  try {
+                                                    String res = await deleteUser(_token!, utenti[index].mail);
+                                                    Utils.showSnackBar(context, 'UTENTE ELIMINATO', res, false);
+                                                    Navigator.of(context).pop();
+                                                    setState(() {utenti.removeAt(index);});
+                                                  } catch (e) {
+                                                    Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                                    Navigator.of(context).pop();
+                                                  }
+                                                });
+                                              }
+                                          );
+                                      },
+                                      icon: const Icon(Icons.delete_rounded),
+                                    ),
                                   ),
                                 );
                               },

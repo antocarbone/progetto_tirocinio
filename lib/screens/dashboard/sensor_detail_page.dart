@@ -23,7 +23,6 @@ class SensorDetailPage extends StatefulWidget {
 }
 
 class _SensorDetailPageState extends State<SensorDetailPage> {
-  Utils utils = Utils();
   DateFormat dateTimeFormatter = DateFormat('yyyy/MM/dd kk:mm');
   DateTime? _startDateTime;
   DateTime? _endDateTime;
@@ -63,7 +62,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
               if (pickedDateTime.isBefore(_endDateTime!)) {
                 _startDateTime = pickedDateTime;
               } else {
-                utils.showSnackBar(context, 'Attenzione', 'La data di inizio deve essere precedente a quella di fine', true);
+                Utils.showSnackBar(context, 'Attenzione', 'La data di inizio deve essere precedente a quella di fine', true);
               }
             } else {
               _startDateTime = pickedDateTime;
@@ -73,7 +72,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
               if (pickedDateTime.isAfter(_startDateTime!)) {
                 _endDateTime = pickedDateTime;
               } else {
-                utils.showSnackBar(context, 'Attenzione', 'La data di fine deve essere successiva a quella di inizio', true);
+                Utils.showSnackBar(context, 'Attenzione', 'La data di fine deve essere successiva a quella di inizio', true);
               }
             } else {
               _endDateTime = pickedDateTime;
@@ -89,11 +88,11 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
     String? tmpToken = '';
     String? tmpType = '';
     try {
-      await EncryptedSharedPreferences.initialize('Utils.encryptingKey');
+      await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
 
     } on Exception catch (e) {
-      utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (context) => const LoginPage()),
@@ -138,17 +137,20 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
               Expanded(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 100),
-                  width: _isExpanded ? 80 : 0,
+                  width: _isExpanded ? _userType == 'admin' ? 80 : 40 : 0,
                   child: ListView(
                       scrollDirection: Axis.horizontal,
                       shrinkWrap: true,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
-                          child: FittedBox(child: IconButton(onPressed: () {
-                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
-                          }, icon: const Icon(Icons.settings))),
-                        ),
+                        if (_userType == 'admin') ... [Padding(
+                            padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
+                            child: FittedBox(child: IconButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
+                                },
+                                icon: const Icon(Icons.settings))
+                            )
+                        )],
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: FittedBox(child: IconButton(
@@ -220,7 +222,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                                     onPressed: () => _selectDateTime(context, true),
                                     child: Text(
                                       _startDateTime == null
-                                          ? 'Imposta la data di inizio'
+                                          ? 'Data di inizio'
                                           : 'Inizio: ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
                                     ),
                                   ),
@@ -228,7 +230,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                                     onPressed: () => _selectDateTime(context, false),
                                     child: Text(
                                       _endDateTime == null
-                                          ? 'Imposta la data di fine'
+                                          ? 'Data di fine'
                                           : 'Fine: ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
                                     ),
                                   ),
@@ -344,7 +346,7 @@ class _NotifyDialogState extends State<NotifyDialog> {
           child: Text('Imposta il tipo di notifica',
               style: TextStyle(fontWeight: FontWeight.bold))),
       content: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 800),
+        constraints: const BoxConstraints(maxWidth: 800),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

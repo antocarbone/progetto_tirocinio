@@ -8,12 +8,8 @@ import 'package:dashboard_tirocinio/utility/http_request_helper.dart';
 
 HttpRequestHelper requestHelper = HttpRequestHelper();
 
-
-
-
 /// ******************************************************************************
 /// GESTIONE AUTENTICAZIONE E REGISTRAZIONE UTENTI
-
 
 class AuthUser {
   final String token;
@@ -29,11 +25,21 @@ class AuthUser {
   }
 }
 
+/*
+  METODO PER IL LOGIN
+  - Scopo: Effettua il login dell'utente.
+  - Parametri:
+    - mail: L'email dell'utente.
+    - password: La password dell'utente.
+  - Ritorno: Un oggetto Future<AuthUser> contenente le informazioni dell'utente autenticato.
+*/
 Future<AuthUser> logIn(String mail, String password) async {
-  final response = await requestHelper.postRequest('/users/login', {"email":mail, "passw": password});
+  final response = await requestHelper
+      .postRequest('/users/login', {"email": mail, "passw": password});
 
   if (response.statusCode == 200) {
-    final user = AuthUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    final user =
+        AuthUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     return user;
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
@@ -41,8 +47,45 @@ Future<AuthUser> logIn(String mail, String password) async {
   }
 }
 
-Future<String> register(String nome, String cognome, String mail, String password, String isAdmin) async {
-  final response = await requestHelper.postRequest('/users/signup', {"email":mail, "passw" : password, "nome":nome, "cognome":cognome, "tipo":isAdmin});
+/*
+  METODO PER LA REGISTRAZIONE
+  - Scopo: Registra un nuovo utente.
+  - Parametri:
+    - token: Il token di autenticazione.
+    - nome: Il nome dell'utente.
+    - cognome: Il cognome dell'utente.
+    - contatto1: Il primo contatto dell'utente.
+    - contatto2: Il secondo contatto dell'utente (opzionale).
+    - mail: L'email dell'utente.
+    - password: La password dell'utente.
+    - isAdmin: Il tipo di utente (admin o non admin).
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
+Future<String> register(
+    String token,
+    String nome,
+    String cognome,
+    int contatto1,
+    int? contatto2,
+    String mail,
+    String password,
+    String isAdmin) async {
+  List<int> contatti = [];
+  contatti.add(contatto1);
+  if (contatto2 != null) {
+    contatti.add(contatto2);
+  }
+  final response = await requestHelper.postRequest(
+      '/users/signup',
+      {
+        "email": mail,
+        "passw": password,
+        "nome": nome,
+        "cognome": cognome,
+        "contatti": contatti,
+        "tipo": isAdmin
+      },
+      token);
 
   if (response.statusCode == 201) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -53,8 +96,17 @@ Future<String> register(String nome, String cognome, String mail, String passwor
   }
 }
 
-Future<String> deleteUser(String mail) async {
-  final response = await requestHelper.deleteRequest('/users/', {"email":mail});
+/*
+  METODO PER CANCELLARE UN UTENTE
+  - Scopo: Cancella l'utente corrispondente alla mail inviata.
+  - Parametri:
+    - token: Il token di autenticazione.
+    - mail: L'email dell'utente da cancellare.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
+Future<String> deleteUser(String token, String mail) async {
+  final response =
+      await requestHelper.deleteRequest('/users/', {"email": mail}, token);
 
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -65,40 +117,76 @@ Future<String> deleteUser(String mail) async {
   }
 }
 
+/*
+  METODO PER CAMBIARE LA PASSWORD
+  - Scopo: Cambia la password dell'utente corrispondente alla mail, oppure se un admin
+    intende cambiare la propria invia solamente il token.
+  - Parametri:
+    - token: Il token di autenticazione.
+    - mail: L'email dell'utente (opzionale).
+    - newPassw: La nuova password.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
+Future<String> changePassword(
+    String token, String? mail, String newPassw) async {
+  Map<String, dynamic> body = {"passw": newPassw};
+  if (mail != null) {
+    body.addAll({"email": mail});
+  }
+  final response =
+      await requestHelper.postRequest('/users/change-passw', body, token);
 
-
+  if (response.statusCode == 200) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
 
 /// ******************************************************************************
 /// GESTIONE DATI UTENTE
 
-
 class User {
   final String mail;
+  final List<int> contatti;
   final String nome;
   final String cognome;
 
-  User({required this.mail, required this.nome, required this.cognome});
+  User(
+      {required this.mail,
+      required this.contatti,
+      required this.nome,
+      required this.cognome});
 
   factory User.fromJson(Map<String, dynamic> json) {
-    String mail = 'non-definito';
-    String nome = 'non-definito';
-    String cognome = 'non-definito';
+    List<int> contatti = [];
+    String mail = json['email'];
+    for (String contatto in json["contatti"]) {
+      contatti.add(int.parse(contatto));
+    }
+    String nome = json['nome'];
+    String cognome = json['cognome'];
 
-    mail = json['email'];
-    nome = json['nome'];
-    cognome = json['cognome'];
-
-    return User(mail: mail, nome: nome, cognome: cognome);
+    return User(mail: mail, contatti: contatti, nome: nome, cognome: cognome);
   }
 }
 
-
-
+/*
+  METODO PER OTTENERE LE INFORMAZIONI DI UN UTENTE
+  - Scopo: Recupera le informazioni dell'utente.
+  - Parametri:
+    - mail: L'email dell'utente.
+    - password: La password dell'utente.
+  - Ritorno: Un oggetto Future<User> contenente le informazioni dell'utente.
+*/
 Future<User> getUserInfo(String mail, String password) async {
   final response = await requestHelper.getRequest('/users/get_user_info');
 
   if (response.statusCode == 200) {
-    final user = User.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    final user =
+        User.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     return user;
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
@@ -106,14 +194,29 @@ Future<User> getUserInfo(String mail, String password) async {
   }
 }
 
-
-Future<List<User>> getAllUsers() async {
-  final response = await requestHelper.getRequest('/users/all');
+/*
+  METODO PER OTTENERE TUTTI GLI UTENTI
+  - Scopo: Recupera una lista di tutti gli utenti.
+  - Parametri:
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<List<User>> contenente la lista degli utenti.
+*/
+Future<List<User>> getAllUsers(String token) async {
+  final response = await requestHelper.getRequest('/users/all', token);
 
   if (response.statusCode == 200) {
     final List<User> users = [];
-    for(Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
-      User user = User(mail: element['email'], nome: element['nome'], cognome: element['cognome']);
+    for (Map<String, dynamic> element
+        in jsonDecode(response.body) as List<dynamic>) {
+      List<int> contatti = [];
+      for (String contatto in element["contatti"]) {
+        contatti.add(int.parse(contatto));
+      }
+      User user = User(
+          mail: element['email'],
+          contatti: contatti,
+          nome: element['nome'],
+          cognome: element['cognome']);
       users.add(user);
     }
     return users;
@@ -123,12 +226,83 @@ Future<List<User>> getAllUsers() async {
   }
 }
 
+/// ******************************************************************************
+/// GESTIONE AREE
 
+class Area {
+  final String nome;
+
+  Area({required this.nome});
+
+  factory Area.fromJson(Map<String, dynamic> json) {
+    String nome = json['area_name'];
+
+    return Area(nome: nome);
+  }
+}
+
+Future<String> addArea(String nome, String token) async {
+  final response = await requestHelper.postRequest('/areas/', {"area_name":nome}, token);
+
+  if (response.statusCode == 201) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    print(error['error']);
+    throw Exception(error['error']);
+  }
+}
+
+Future<String> deleteArea(String nome, String token) async {
+  final response = await requestHelper.deleteRequest('/areas/', {"area_name":nome}, token);
+
+  if (response.statusCode == 200) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+Future<List<Area>> getAllAreas(String token) async {
+  final response = await requestHelper.getRequest('/areas/', token);
+
+  List<Area> areas = [];
+
+  if (response.statusCode == 200) {
+    Map<String, dynamic> json = jsonDecode(response.body);
+    for(String area in json["all_areas"]) {
+      areas.add(Area(nome: area));
+    }
+    return areas;
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+Future<List<Area>> getAllUserAreas(String token, String mail) async {
+  final response = await requestHelper.postRequest('/areas/all_user_areas', {"email":mail},token);
+
+  List<Area> areas = [];
+
+  if (response.statusCode == 200) {
+    Map<String, dynamic> json = jsonDecode(response.body);
+    for(Map<String, dynamic> area in json["all_areas"]) {
+      areas.add(Area(nome: area["area_name"]));
+    }
+    return areas;
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
 
 
 /// ******************************************************************************
 /// GESTIONE SENSORI
-
 
 class Sensor {
   final int id;
@@ -136,7 +310,11 @@ class Sensor {
   final String unitaMisura;
   final double lettura;
 
-  Sensor({required this.id, required this.nome, required this.unitaMisura, required this.lettura});
+  Sensor(
+      {required this.id,
+      required this.nome,
+      required this.unitaMisura,
+      required this.lettura});
 
   factory Sensor.fromJson(Map<String, dynamic> json) {
     final int id = int.parse(json['id']);
@@ -144,7 +322,8 @@ class Sensor {
     final String unitaMisura = json['unita_di_misura'];
     final double lettura = double.parse(json['valore']);
 
-    return Sensor(id: id, nome: nome, unitaMisura: unitaMisura, lettura: lettura);
+    return Sensor(
+        id: id, nome: nome, unitaMisura: unitaMisura, lettura: lettura);
   }
 
   MyGenericListElement toListElement() {
@@ -156,8 +335,7 @@ class Sensor {
             RadiusChart(chartData: [ChartData('', lettura)]),
             Text(
               '$lettura $unitaMisura',
-              style: const TextStyle(
-                  fontSize: 50, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 50, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -167,16 +345,13 @@ class Sensor {
   }
 
   MySensorInfo toNodeElement() {
-    return MySensorInfo(sensorName: nome, sensorValue: lettura, sensorUnitMisura: unitaMisura);
+    return MySensorInfo(
+        sensorName: nome, sensorValue: lettura, sensorUnitMisura: unitaMisura);
   }
 }
 
-
-
-
 /// ******************************************************************************
 /// GESTIONE SENSORI BINARI
-
 
 class BinarySensor {
   final int id;
@@ -189,12 +364,12 @@ class BinarySensor {
 
   BinarySensor(
       {required this.id,
-        required this.nome,
-        required this.valore,
-        required this.deviceClass,
-        required this.stringaTrue,
-        required this.stringaFalse,
-        required this.codiceIcona});
+      required this.nome,
+      required this.valore,
+      required this.deviceClass,
+      required this.stringaTrue,
+      required this.stringaFalse,
+      required this.codiceIcona});
 
   factory BinarySensor.fromJson(Map<String, dynamic> json) {
     final int id = int.parse(json['id']);
@@ -205,7 +380,14 @@ class BinarySensor {
     final String stringaFalse = json['stringa_false'];
     final String codiceIcona = json['codice_icona'];
 
-    return BinarySensor(id: id, nome: nome, valore: valore, deviceClass: deviceClass, stringaTrue: stringaTrue, stringaFalse: stringaFalse, codiceIcona: codiceIcona);
+    return BinarySensor(
+        id: id,
+        nome: nome,
+        valore: valore,
+        deviceClass: deviceClass,
+        stringaTrue: stringaTrue,
+        stringaFalse: stringaFalse,
+        codiceIcona: codiceIcona);
   }
 
   MyGenericListElement toListElement() {
@@ -217,12 +399,14 @@ class BinarySensor {
   }
 
   MyBinarySensorInfo toNodeElement() {
-    return MyBinarySensorInfo(sensorValue: valore, sensorName: nome, iconCode: codiceIcona, trueString: stringaTrue, falseString: stringaFalse);
+    return MyBinarySensorInfo(
+        sensorValue: valore,
+        sensorName: nome,
+        iconCode: codiceIcona,
+        trueString: stringaTrue,
+        falseString: stringaFalse);
   }
 }
-
-
-
 
 /// ******************************************************************************
 /// GESTIONE NODI
@@ -236,10 +420,10 @@ class Nodo {
 
   Nodo(
       {required this.id,
-        required this.nome,
-        required this.status,
-        required this.sensors,
-        required this.binarySensors});
+      required this.nome,
+      required this.status,
+      required this.sensors,
+      required this.binarySensors});
 
   factory Nodo.fromJson(Map<String, dynamic> json) {
     List<Sensor> sensors = [];
@@ -254,7 +438,12 @@ class Nodo {
       binarySensors.add(BinarySensor.fromJson(binarySensor));
     }
 
-    return Nodo(id: id, nome: nome, status: status, sensors: sensors, binarySensors: binarySensors);
+    return Nodo(
+        id: id,
+        nome: nome,
+        status: status,
+        sensors: sensors,
+        binarySensors: binarySensors);
   }
 
   MyNodeSummary toWidget() {
@@ -267,14 +456,28 @@ class Nodo {
   }
 }
 
-
-Future<List<MyNodeSummary>> getAllAreaNodes(String mail, String password) async {
+/*
+  METODO PER OTTENERE TUTTI I NODI DELL'AREA
+  - Scopo: Recupera una lista di tutti i nodi di un'area.
+  - Parametri:
+    - mail: L'email dell'utente.
+    - password: La password dell'utente.
+  - Ritorno: Un oggetto Future<List<MyNodeSummary>> contenente la lista dei nodi.
+*/
+Future<List<MyNodeSummary>> getAllAreaNodes(
+    String mail, String password) async {
   final response = await requestHelper.getRequest('/users/get_user_info');
 
   if (response.statusCode == 200) {
     final List<MyNodeSummary> nodes = [];
-    for(Map<String, dynamic> element in jsonDecode(response.body) as List<Map<String, dynamic>>) {
-      Nodo nodo = Nodo(id: int.parse(element['id']), nome: element['nome'], status: element['status'], sensors: element['sensors'], binarySensors: element['binary_sensors']);
+    for (Map<String, dynamic> element
+        in jsonDecode(response.body) as List<Map<String, dynamic>>) {
+      Nodo nodo = Nodo(
+          id: int.parse(element['id']),
+          nome: element['nome'],
+          status: element['status'],
+          sensors: element['sensors'],
+          binarySensors: element['binary_sensors']);
       nodes.add(nodo.toWidget());
     }
     return nodes;

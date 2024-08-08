@@ -14,7 +14,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final Utils utils = Utils();
   late EncryptedSharedPreferences _prefs;
   final _formKey = GlobalKey<FormState>();
   final _mailController = TextEditingController();
@@ -29,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
         _prefs = tmp;
       });
     } catch (e) {
-      utils.showSnackBar(context, 'ERRORE', 'Errore durante l\'inizializzazione delle preferenze crittografate: $e', true);
+      Utils.showSnackBar(context, 'ERRORE', 'Errore durante l\'inizializzazione delle preferenze crittografate: $e', true);
     }
   }
 
@@ -135,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                                           false);
                                     }
                                   } on Exception catch (e) {
-                                    utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                    Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
                                     return;
                                   }
                                 }

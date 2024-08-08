@@ -21,7 +21,6 @@ class CommissioningPage extends StatefulWidget {
 
 class _CommissioningPageState extends State<CommissioningPage> {
   final _flutterEspBleProvPlugin = FlutterEspBleProv();
-  final Utils utils = Utils();
 
   final defaultPadding = 12.0;
 
@@ -49,7 +48,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
             if (res != null) {
               resJson = json.decode(res);
               if (resJson['status'] != 'success') {
-                utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
+                Utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
                 setState(() {
                   _newNodeInfoSent = false;
                 });
@@ -63,7 +62,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
             if (res != null) {
               resJson = json.decode(res);
               if (resJson['status'] != 'success') {
-                utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
+                Utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
                 setState(() {
                   _newNodeInfoSent = false;
                 });
@@ -76,7 +75,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
           });
           return true;
         } else {
-          utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
+          Utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
           setState(() {
             _newNodeInfoSent = false;
           });
@@ -84,7 +83,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
         }
       }
     } catch (e) {
-      utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
+      Utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
     }
     setState(() {
       _newNodeInfoSent = false;
@@ -116,7 +115,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
     final passphrase = _passwordController.text;
     try {
       return await _flutterEspBleProvPlugin.provisionWifi(widget.nodeData['name'], proofOfPossession, selectedSsid, passphrase);
-    } on Exception catch (e) {
+    } catch (e) {
       return false;
     }
   }
@@ -179,11 +178,11 @@ class _CommissioningPageState extends State<CommissioningPage> {
                               const Text('Reti WiFi', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
                               IconButton(
                                   onPressed: () async {
-                                    utils.showSnackBar(context, 'Attendi', 'Sto scansionando le reti wifi disponibili...', false);
+                                    Utils.showSnackBar(context, 'Attendi', 'Sto scansionando le reti wifi disponibili...', false);
                                     if(await scanWifiNetworks()) {
-                                      utils.showSnackBar(context, 'Fatto!', 'Scansione terminata', false);
+                                      Utils.showSnackBar(context, 'Fatto!', 'Scansione terminata', false);
                                     } else {
-                                      utils.showSnackBar(context, 'Ops', 'Qualcosa è andato storto', true);
+                                      Utils.showSnackBar(context, 'Ops', 'Qualcosa è andato storto', true);
                                     }
                                     },
                                   icon: const Icon(Icons.refresh))

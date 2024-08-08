@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dashboard_tirocinio/screens/dashboard/node_status_history.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/sensor_detail_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
