@@ -1,12 +1,32 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:intl/intl.dart';
 
 import 'package:dashboard_tirocinio/utility/http_request_helper.dart';
 
 HttpRequestHelper requestHelper = HttpRequestHelper();
+DateFormat dateTimeFormatter = DateFormat('yyyy/MM/dd kk:mm');
+DateFormat historyDateFormatter = DateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'");
+
+
+/// ******************************************************************************
+/// GESTIONE ROTTE GENERICHE DI CONFIGURAZIONE
+
+Future<String> checkBaseUrl() async {
+  final response = await requestHelper.getRequest('/api_info');
+
+  if (response.statusCode == 200) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['version'];
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
 
 /// ******************************************************************************
 /// GESTIONE AUTENTICAZIONE E REGISTRAZIONE UTENTI
@@ -90,6 +110,8 @@ Future<String> register(
   if (response.statusCode == 201) {
     Map<String, dynamic> message = jsonDecode(response.body);
     return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
     throw Exception(error['error']);
@@ -111,6 +133,8 @@ Future<String> deleteUser(String token, String mail) async {
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
     return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
     throw Exception(error['error']);
@@ -139,6 +163,8 @@ Future<String> changePassword(
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
     return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
     throw Exception(error['error']);
@@ -154,8 +180,7 @@ class User {
   final String nome;
   final String cognome;
 
-  User(
-      {required this.mail,
+  User({required this.mail,
       required this.contatti,
       required this.nome,
       required this.cognome});
@@ -173,26 +198,6 @@ class User {
   }
 }
 
-/*
-  METODO PER OTTENERE LE INFORMAZIONI DI UN UTENTE
-  - Scopo: Recupera le informazioni dell'utente.
-  - Parametri:
-    - mail: L'email dell'utente.
-    - password: La password dell'utente.
-  - Ritorno: Un oggetto Future<User> contenente le informazioni dell'utente.
-*/
-Future<User> getUserInfo(String mail, String password) async {
-  final response = await requestHelper.getRequest('/users/get_user_info');
-
-  if (response.statusCode == 200) {
-    final user =
-        User.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
-    return user;
-  } else {
-    Map<String, dynamic> error = jsonDecode(response.body);
-    throw Exception(error['error']);
-  }
-}
 
 /*
   METODO PER OTTENERE TUTTI GLI UTENTI
@@ -220,6 +225,8 @@ Future<List<User>> getAllUsers(String token) async {
       users.add(user);
     }
     return users;
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
     throw Exception(error['error']);
@@ -239,6 +246,15 @@ class Area {
 
     return Area(nome: nome);
   }
+
+  @override
+  bool operator ==(Object other) {
+    if(other is Area) {
+      return nome == other.nome;
+    } else {
+      return false;
+    }
+  }
 }
 
 Future<String> addArea(String nome, String token) async {
@@ -247,9 +263,10 @@ Future<String> addArea(String nome, String token) async {
   if (response.statusCode == 201) {
     Map<String, dynamic> message = jsonDecode(response.body);
     return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
-    print(error['error']);
     throw Exception(error['error']);
   }
 }
@@ -260,6 +277,8 @@ Future<String> deleteArea(String nome, String token) async {
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
     return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
     throw Exception(error['error']);
@@ -273,27 +292,50 @@ Future<List<Area>> getAllAreas(String token) async {
 
   if (response.statusCode == 200) {
     Map<String, dynamic> json = jsonDecode(response.body);
-    for(String area in json["all_areas"]) {
+    for(String area in json["area_list"]) {
       areas.add(Area(nome: area));
     }
     return areas;
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
     throw Exception(error['error']);
   }
 }
 
-Future<List<Area>> getAllUserAreas(String token, String mail) async {
-  final response = await requestHelper.postRequest('/areas/all_user_areas', {"email":mail},token);
+Future<List<Area>> getAllUserAreas(String token, [String? mail]) async {
+  dynamic response;
+  if (mail == null) {
+    response = await requestHelper.postRequest('/areas/user', null, token);
+  } else {
+    response = await requestHelper.postRequest('/areas/user', {"email":mail}, token);
+  }
 
   List<Area> areas = [];
 
   if (response.statusCode == 200) {
     Map<String, dynamic> json = jsonDecode(response.body);
-    for(Map<String, dynamic> area in json["all_areas"]) {
-      areas.add(Area(nome: area["area_name"]));
+    for(String area in json["area_list"]) {
+      areas.add(Area(nome: area));
     }
     return areas;
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+Future<String> updateUserAreas(String mail, List<String> aree, String token) async {
+  final response = await requestHelper.postRequest('/areas/user/update', {"email":mail, "area_list":aree}, token);
+
+  if (response.statusCode == 200) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
     throw Exception(error['error']);
@@ -309,21 +351,25 @@ class Sensor {
   final String nome;
   final String unitaMisura;
   final double lettura;
+  final DateTime dataLettura;
 
-  Sensor(
-      {required this.id,
-      required this.nome,
-      required this.unitaMisura,
-      required this.lettura});
+  Sensor({
+    required this.id,
+    required this.nome,
+    required this.unitaMisura,
+    required this.lettura, 
+    required this.dataLettura
+  });
 
   factory Sensor.fromJson(Map<String, dynamic> json) {
-    final int id = int.parse(json['id']);
-    final String nome = json['nome'];
-    final String unitaMisura = json['unita_di_misura'];
-    final double lettura = double.parse(json['valore']);
+    final int id = json['id_sensor'];
+    final String nome = json['sens_name'];
+    final String unitaMisura = json['unit'];
+    final double lettura = double.parse(json['value']);
+    final DateTime dataLettura = historyDateFormatter.parseUtc(json['lecture_date']);
 
     return Sensor(
-        id: id, nome: nome, unitaMisura: unitaMisura, lettura: lettura);
+        id: id, nome: nome, unitaMisura: unitaMisura, lettura: lettura, dataLettura: dataLettura);
   }
 
   MyGenericListElement toListElement() {
@@ -343,10 +389,62 @@ class Sensor {
       title: nome,
     );
   }
+}
 
-  MySensorInfo toNodeElement() {
-    return MySensorInfo(
-        sensorName: nome, sensorValue: lettura, sensorUnitMisura: unitaMisura);
+class SensorReading {
+  final double value;
+  final DateTime date;
+
+  SensorReading({
+    required this.value,
+    required this.date
+  });
+
+  factory SensorReading.fromJson(Map<String, dynamic> json){
+    final double value = double.parse(json['value']);
+    final DateTime date = historyDateFormatter.parseUtc(json['date']);
+
+    return SensorReading(
+        value: value,
+        date: date
+    );
+  }
+}
+
+class SensorReadingsHistory {
+  final List<SensorReading> readings;
+
+  SensorReadingsHistory({required this.readings});
+
+  factory SensorReadingsHistory.fromJson(List<dynamic> json) {
+    List<SensorReading> readings = [];
+    for(final elem in json) {
+      readings.add(SensorReading.fromJson(elem));
+    }
+    return SensorReadingsHistory(readings: readings);
+  }
+
+  List<FlSpot> toSpotList(DateTime start, DateTime end) {
+    List<FlSpot> out = [];
+    for(final elem in readings) {
+      out.add(FlSpot(elem.date.toUtc().millisecondsSinceEpoch/60000-start.toUtc().millisecondsSinceEpoch/60000, double.parse(elem.value.toStringAsFixed(2))));
+    }
+    return out;
+  }
+}
+
+
+Future<List<FlSpot>> getSensorReadings(int sensorId, DateTime start, DateTime end, String token) async {
+  final response = await requestHelper.postRequest('/areas/nodes/sensors/sensor_data', {"id_sensor":sensorId, "start":dateTimeFormatter.format(start), "end":dateTimeFormatter.format(end)}, token);
+
+  if (response.statusCode == 200) {
+    final List<dynamic> json = jsonDecode(response.body);
+    return SensorReadingsHistory.fromJson(json).toSpotList(start, end);
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
   }
 }
 
@@ -357,54 +455,85 @@ class BinarySensor {
   final int id;
   final String nome;
   final bool valore;
-  final String deviceClass;
+  final DateTime dataLettura;
   final String stringaTrue;
   final String stringaFalse;
   final String codiceIcona;
 
   BinarySensor(
       {required this.id,
-      required this.nome,
-      required this.valore,
-      required this.deviceClass,
-      required this.stringaTrue,
-      required this.stringaFalse,
-      required this.codiceIcona});
+        required this.nome,
+        required this.valore,
+        required this.dataLettura,
+        required this.stringaTrue,
+        required this.stringaFalse,
+        required this.codiceIcona});
 
   factory BinarySensor.fromJson(Map<String, dynamic> json) {
-    final int id = int.parse(json['id']);
-    final String nome = json['nome'];
-    final bool valore = json['valore'];
-    final String deviceClass = json['device_class'];
-    final String stringaTrue = json['stringa_true'];
-    final String stringaFalse = json['stringa_false'];
-    final String codiceIcona = json['codice_icona'];
+    final int id = json['id_bin_sensor'];
+    final String nome = json['sens_name'];
+    final bool valore = json['value'];
+    final DateTime dataLettura = historyDateFormatter.parseUtc(json['lecture_date']);
+    final String stringaTrue = json['true_string'];
+    final String stringaFalse = json['false_string'];
+    final String codiceIcona = json['icon'];
 
     return BinarySensor(
         id: id,
         nome: nome,
         valore: valore,
-        deviceClass: deviceClass,
+        dataLettura: dataLettura,
         stringaTrue: stringaTrue,
         stringaFalse: stringaFalse,
         codiceIcona: codiceIcona);
   }
+}
 
-  MyGenericListElement toListElement() {
-    return MyGenericListElement(
-      leading: Icon(MdiIcons.fromString(codiceIcona)),
-      title: nome,
-      subtitle: valore ? stringaTrue : stringaFalse,
+class BinarySensorReading {
+  final bool value;
+  final DateTime date;
+
+  BinarySensorReading({
+    required this.value,
+    required this.date
+  });
+
+  factory BinarySensorReading.fromJson(Map<String, dynamic> json){
+    final bool value = json['value'];
+    final DateTime date = historyDateFormatter.parseUtc(json['date']);
+
+    return BinarySensorReading(
+        value: value,
+        date: date
     );
   }
+}
 
-  MyBinarySensorInfo toNodeElement() {
-    return MyBinarySensorInfo(
-        sensorValue: valore,
-        sensorName: nome,
-        iconCode: codiceIcona,
-        trueString: stringaTrue,
-        falseString: stringaFalse);
+class BinarySensorReadingsHistory {
+  final List<BinarySensorReading> readings;
+
+  BinarySensorReadingsHistory({required this.readings});
+
+  factory BinarySensorReadingsHistory.fromJson(List<dynamic> json) {
+    List<BinarySensorReading> readings = [];
+    for(final elem in json) {
+      readings.add(BinarySensorReading.fromJson(elem));
+    }
+    return BinarySensorReadingsHistory(readings: readings);
+  }
+}
+
+Future<BinarySensorReadingsHistory> getBinarySensorReadings(int sensorId, DateTime start, DateTime end, String token) async {
+  final response = await requestHelper.postRequest('/areas/nodes/sensors/binary_sensor_data', {"id_bin_sensor":sensorId, "start":dateTimeFormatter.format(start), "end":dateTimeFormatter.format(end)}, token);
+
+  if (response.statusCode == 200) {
+    final List<dynamic> json = jsonDecode(response.body);
+    return BinarySensorReadingsHistory.fromJson(json);
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
   }
 }
 
@@ -412,47 +541,21 @@ class BinarySensor {
 /// GESTIONE NODI
 
 class Nodo {
-  final int id;
+  final String id;
   final String nome;
   final String status;
-  final List<Sensor> sensors;
-  final List<BinarySensor> binarySensors;
 
-  Nodo(
-      {required this.id,
-      required this.nome,
-      required this.status,
-      required this.sensors,
-      required this.binarySensors});
+  Nodo({required this.id, required this.nome, required this.status});
 
   factory Nodo.fromJson(Map<String, dynamic> json) {
-    List<Sensor> sensors = [];
-    List<BinarySensor> binarySensors = [];
-    final int id = int.parse(json['id']);
-    final String nome = json['nome'];
-    final String status = json['status'];
-    for (Map<String, dynamic> sensor in json['sensors']) {
-      sensors.add(Sensor.fromJson(sensor));
-    }
-    for (Map<String, dynamic> binarySensor in json['binary_sensors']) {
-      binarySensors.add(BinarySensor.fromJson(binarySensor));
-    }
+    final String id = json['id_node'];
+    final String nome = json['node_name'];
+    final String status = json['node_status'];
 
     return Nodo(
         id: id,
         nome: nome,
-        status: status,
-        sensors: sensors,
-        binarySensors: binarySensors);
-  }
-
-  MyNodeSummary toWidget() {
-    return MyNodeSummary(
-      nodeName: nome,
-      nodeStatus: status,
-      sensors: sensors,
-      binarySensors: binarySensors,
-    );
+        status: status);
   }
 }
 
@@ -462,25 +565,235 @@ class Nodo {
   - Parametri:
     - mail: L'email dell'utente.
     - password: La password dell'utente.
-  - Ritorno: Un oggetto Future<List<MyNodeSummary>> contenente la lista dei nodi.
+  - Ritorno: Un oggetto Future<List<Node>> contenente la lista dei nodi.
 */
-Future<List<MyNodeSummary>> getAllAreaNodes(
-    String mail, String password) async {
-  final response = await requestHelper.getRequest('/users/get_user_info');
+Future<List<Nodo>> getAllAreaNodes(String nomeArea, String token) async {
+  final response = await requestHelper.postRequest('/areas/nodes/', {"area_name":nomeArea}, token);
 
   if (response.statusCode == 200) {
-    final List<MyNodeSummary> nodes = [];
-    for (Map<String, dynamic> element
-        in jsonDecode(response.body) as List<Map<String, dynamic>>) {
-      Nodo nodo = Nodo(
-          id: int.parse(element['id']),
-          nome: element['nome'],
-          status: element['status'],
-          sensors: element['sensors'],
-          binarySensors: element['binary_sensors']);
-      nodes.add(nodo.toWidget());
+    final List<Nodo> nodes = [];
+    for (Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
+      Nodo nodo = Nodo.fromJson(element);
+      nodes.add(nodo);
     }
     return nodes;
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+Future<Map<String, dynamic>> getAllNodeSensors(String nodeId, String token) async {
+  final response = await requestHelper.postRequest('/areas/nodes/sensors/', {"id_node":nodeId}, token);
+
+  if (response.statusCode == 200) {
+    final List<Sensor> sensors = [];
+    final List<BinarySensor> binarySensors = [];
+    Map<String, dynamic> json = jsonDecode(response.body);
+    for (Map<String, dynamic> sensor in json['sensors']) {
+      sensors.add(Sensor.fromJson(sensor));
+    }
+    for (Map<String, dynamic> binarySensor in json['binary_sensors']) {
+      binarySensors.add(BinarySensor.fromJson(binarySensor));
+    }
+    return {"sensors" : sensors, "binary_sensors" : binarySensors};
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+class StatoNodo {
+  final String id;
+  final DateTime start;
+  final DateTime? end;
+  final String status;
+
+  StatoNodo({required this.id, required this.start, required this.end, required this.status});
+
+  factory StatoNodo.fromJson(Map<String, dynamic> json) {
+    final String id = json['id_node'];
+    final DateTime start = historyDateFormatter.parseUtc(json['start']);
+    final DateTime? end = json['end'] == null ? null : historyDateFormatter.parseUtc(json['end']);
+    final String status = json['node_status'];
+
+    return StatoNodo(
+        id: id,
+        start: start,
+        end: end,
+        status: status);
+  }
+}
+
+Future<List<StatoNodo>> getNodeStatusHistory(String nodeId, DateTime start, DateTime end, String token) async {
+  final response = await requestHelper.postRequest('/areas/nodes/history', {"id_node":nodeId, "start":dateTimeFormatter.format(start), "end":dateTimeFormatter.format(end)}, token);
+
+  if (response.statusCode == 200) {
+    final List<StatoNodo> states = [];
+    for (Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
+      StatoNodo stato = StatoNodo.fromJson(element);
+      states.add(stato);
+    }
+    return states;
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+
+/// ******************************************************************************
+/// GESTIONE NOTIFICHE
+
+class NotificaSensore {
+  final int id;
+  final DateTime dataCreazione;
+  final String nome;
+  final String trigger;
+  final double benchmark;
+  final bool status;
+
+  NotificaSensore({required this.id, required this.dataCreazione, required this.nome, required this.trigger, required this.benchmark, required this.status});
+
+  factory NotificaSensore.fromJson(Map<String, dynamic> json) {
+    final int id = json['id_sensor'];
+    final String nome = json['name'];
+    final DateTime dataCreazione = json['date'];
+    final String trigger = json['trigger'];
+    final double benchmark = json['benchmark'];
+    final bool status = json['status'];
+
+    return NotificaSensore(
+        id: id,
+        nome: nome,
+        dataCreazione: dataCreazione,
+        trigger: trigger,
+        benchmark: benchmark,
+        status: status
+    );
+  }
+}
+
+Future<String> addNotify(String nome, String trigger, double benchmark, String token) async {
+  final response = await requestHelper.postRequest('/notify/add',
+      {
+        "date":dateTimeFormatter.format(DateTime.now()),
+        "name":nome,
+        "trigger":trigger,
+        "benchmark":benchmark,
+        "status":true
+      }, token);
+
+  if (response.statusCode == 201) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+Future<String> deleteNotify(int id, String token) async {
+  final response = await requestHelper.deleteRequest('/notify/',
+      {
+        "id_notify":id
+      }, token);
+
+  if (response.statusCode == 201) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+class NotificaSensoreBinario {
+  final int id;
+  final DateTime dataCreazione;
+  final String nome;
+  final double benchmark;
+  final bool status;
+
+  NotificaSensoreBinario({required this.id, required this.dataCreazione, required this.nome, required this.benchmark, required this.status});
+
+  factory NotificaSensoreBinario.fromJson(Map<String, dynamic> json) {
+    final int id = json['id_sensor'];
+    final String nome = json['name'];
+    final DateTime dataCreazione = json['date'];
+    final double benchmark = json['benchmark'];
+    final bool status = json['status'];
+
+    return NotificaSensoreBinario(
+        id: id,
+        nome: nome,
+        dataCreazione: dataCreazione,
+        benchmark: benchmark,
+        status: status
+    );
+  }
+}
+
+Future<String> addBinaryNotify(String nome, bool benchmark, String token) async {
+  final response = await requestHelper.postRequest('/notify/add_binary',
+      {
+        "date":dateTimeFormatter.format(DateTime.now()),
+        "name":nome,
+        "benchmark":benchmark,
+        "status":true
+      }, token);
+
+  if (response.statusCode == 201) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+
+Future<String> deleteBinaryNotify(int id, String token) async {
+  final response = await requestHelper.deleteRequest('/notify/',
+      {
+        "id_bin_notify":id
+      }, token);
+
+  if (response.statusCode == 201) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+
+Future<String> updateNotify(int id, String token) async {
+  final response = await requestHelper.postRequest('/notify/change_status',
+      {
+        "id_notifica":id
+      }, token);
+
+  if (response.statusCode == 201) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
     Map<String, dynamic> error = jsonDecode(response.body);
     throw Exception(error['error']);

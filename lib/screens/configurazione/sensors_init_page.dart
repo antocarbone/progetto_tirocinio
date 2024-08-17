@@ -87,8 +87,6 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomRight: Radius.circular(20), bottomLeft: Radius.circular(20))),
         title: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

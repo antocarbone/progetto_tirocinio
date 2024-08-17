@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
 import 'package:dashboard_tirocinio/screens/configurazione/ble_connection_dialog.dart';
@@ -57,15 +59,24 @@ class _HomePageState extends State<HomePage> {
       _token = tmpToken!;
       _userType = tmpType!;
     });
-
-    //initUserAreas();
+    initUserAreas();
   }
 
   void initUserAreas() async {
-    List<Area> tmp = await getAllUserAreas(_token!, "tmp");
-    setState(() {
-      userAreas = tmp;
-    });
+    List<Area> tmp;
+    try {
+      tmp = await getAllUserAreas(_token!, null);
+      setState(() {
+        userAreas = tmp;
+      });
+    } on HttpException catch (e) {
+      await _prefs.clear();
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+    }
   }
 
   @override
@@ -79,11 +90,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                bottomRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20))),
         title: const Text('Home'),
         actions: [
           Column(
@@ -141,7 +147,7 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               children: [
                 const Text('Menu', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
-                if (!kIsWeb) ...[
+                if (!kIsWeb && _userType == "admin") ...[
                   ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop();
@@ -187,14 +193,26 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const Divider(),
                 ],
-                ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (context) => DettaglioAreaPage()),
-                          (Route<dynamic> route) => false);
+                Flexible(
+                  flex: 6,
+                  child: ListView.builder(
+                    itemCount: userAreas.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                      builder: (context) => DettaglioAreaPage(area: userAreas[index])),
+                                      (Route<dynamic> route) => false);
+                            },
+                            child: ListTile(title: Center(child: Text(userAreas[index].nome)))
+                        ),
+                      );
                     },
-                    child: const ListTile(title: Center(child: Text('Area 1'))))
+                  ),
+                ),
               ],
             ),
           ),
@@ -203,19 +221,18 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Center(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 300,
-                  crossAxisSpacing: 5,
-                  mainAxisSpacing: 5),
-              itemCount: 8,
-              itemBuilder: (context, index) {
-                return const GridTile(
-                  child: MySensorInfo(sensorValue: 20.5, sensorName: 'temp', sensorUnitMisura: '°C')
-                );
-              },
-            ),
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 300,
+                crossAxisSpacing: 5,
+                mainAxisSpacing: 5),
+            itemCount: 5,
+            itemBuilder: (context, index) {
+              return GridTile(
+                //child: MyBinarySensorInfo(sensorValue: true, sensorName: 'Porta Cucina', iconCode: 'door', trueString: 'aperta', falseString: 'chiusa')
+                child: MySensorInfo(sensor: Sensor(id: 1, nome: 'tmp', unitaMisura: '°C', lettura: 20.5, dataLettura: DateTime.now())),
+              );
+            },
           ),
         ),
       ),

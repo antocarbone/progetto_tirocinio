@@ -3,7 +3,6 @@ import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/areas_manage_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/change_password_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/users_manage_page.dart';
-import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
@@ -64,11 +63,6 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                bottomRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20))),
         title: const Text('Impostazioni'),
         actions: [
           Column(

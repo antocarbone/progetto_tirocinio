@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
@@ -14,7 +16,8 @@ import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
 
 class DettaglioAreaPage extends StatefulWidget {
-  const DettaglioAreaPage({super.key});
+  final Area area;
+  const DettaglioAreaPage({super.key, required this.area});
 
   @override
   State<DettaglioAreaPage> createState() => _DettaglioAreaPageState();
@@ -26,19 +29,9 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
   double defaultPadding = 12;
   bool _isExpanded = false;
 
-  List<Sensor> sensors = [
-    Sensor(id: 0, nome: 'temp1', unitaMisura: '°C', lettura: 32.5),
-    Sensor(id: 1, nome: 'temp2', unitaMisura: '°C', lettura: 32.5),
-    Sensor(id: 2, nome: 'temp3', unitaMisura: '°C', lettura: 32.5),
-    Sensor(id: 3, nome: 'temp4', unitaMisura: '°C', lettura: 32.5),
-  ];
-
-  List<BinarySensor> binarySensors = [
-    BinarySensor(id: 0, nome: 'presenza1', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
-    BinarySensor(id: 1, nome: 'presenza2', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
-    BinarySensor(id: 2, nome: 'presenza3', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
-    BinarySensor(id: 3, nome: 'presenza4', valore: true, deviceClass: 'deviceClass', stringaTrue: 'presente', stringaFalse: 'non presente', codiceIcona: 'motion'),
-  ];
+  List<Area> userAreas = [];
+  List<Nodo> areaNodes = [];
+  List<Map<String, dynamic>> nodeSensors = [];
 
   late EncryptedSharedPreferences _prefs;
   String? _token;
@@ -71,6 +64,61 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
       _token = tmpToken!;
       _userType = tmpType!;
     });
+
+    initUserAreas();
+  }
+
+  void initUserAreas() async {
+    try {
+      List<Area> tmp = await getAllUserAreas(_token!);
+      setState(() {
+        userAreas = tmp;
+      });
+    } on HttpException catch (e) {
+      await _prefs.clear();
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+    }
+    initAreaNodes();
+  }
+
+  void initAreaNodes() async {
+    try {
+      List<Nodo> tmp = await getAllAreaNodes(widget.area.nome, _token!);
+      setState(() {
+        areaNodes = tmp;
+      });
+    } on HttpException catch (e) {
+      await _prefs.clear();
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+    }
+    initNodeSensors();
+  }
+
+  void initNodeSensors() async {
+    List<Map<String, dynamic>> tmpNodeSensors = [];
+    try {
+      for(Nodo nodo in areaNodes) {
+        tmpNodeSensors.add(await getAllNodeSensors(nodo.id, _token!));
+      }
+      setState(() {
+        nodeSensors = tmpNodeSensors;
+      });
+    } on HttpException catch (e) {
+      await _prefs.clear();
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+    }
   }
 
   @override
@@ -84,12 +132,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                bottomRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20))),
-        title: const Text('Area 1'),
+        title: Text(widget.area.nome),
         actions: [
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -146,7 +189,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
             child: Column(
               children: [
                 const Text('Menu', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
-                if (!kIsWeb) ...[
+                if (!kIsWeb && _userType == "admin") ...[
                   ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop();
@@ -199,7 +242,30 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                               builder: (context) => const HomePage()),
                               (Route<dynamic> route) => false);
                     },
-                    child: const ListTile(leading: Icon(Icons.home), title: Center(child: Text('Home'))))
+                    child: const ListTile(leading: Icon(Icons.home), title: Center(child: Text('Home')))
+                ),
+                const Divider(),
+                Flexible(
+                  flex: 6,
+                  child: ListView.builder(
+                    itemCount: userAreas.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: ElevatedButton(
+                            autofocus: (widget.area.nome == userAreas[index].nome),
+                            onPressed: () {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                      builder: (context) => DettaglioAreaPage(area: userAreas[index])),
+                                      (Route<dynamic> route) => false);
+                            },
+                            child: ListTile(title: Center(child: Text(userAreas[index].nome)))
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -209,26 +275,29 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Center(
-            child: GridView.builder(
+            child: areaNodes.isNotEmpty ? GridView.builder(
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 1200,
                   mainAxisExtent: kIsWeb ? 300 : 200,
                   crossAxisSpacing: 5,
                   mainAxisSpacing: 20
               ),
-              itemCount: 6,
+              itemCount: areaNodes.length,
               itemBuilder: (context, index) {
-                return GridTile(
-                  child: FittedBox(child: MyNodeSummary(
-                    nodeName: 'Sicurezza',
-                    nodeStatus: 'online',
-                    sensors: sensors,
-                    binarySensors: binarySensors,
-                  )
-                  ),
-                );
+                if (nodeSensors.isEmpty) {
+                } else {
+                  return GridTile(
+                    child: FittedBox(child: MyNodeSummary(
+                      nodo: areaNodes[index],
+                      sensors: nodeSensors.isEmpty ? [] : nodeSensors[index]['sensors'],
+                      binarySensors: nodeSensors.isEmpty ? [] : nodeSensors[index]['binary_sensors'],
+                      token: _token!,
+                    )
+                    ),
+                  );
+                }
               },
-            ),
+            ) : const Text('Nessun nodo è collegato a quest\'area\nUsa la versione android dell\'app per aggiungerne uno', textAlign: TextAlign.center,),
           ),
         ),
       ),

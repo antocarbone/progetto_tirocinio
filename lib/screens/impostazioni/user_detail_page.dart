@@ -1,7 +1,11 @@
+import 'dart:io';
+
+import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/change_password_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
 
@@ -14,6 +18,8 @@ class UserDetailPage extends StatefulWidget {
 }
 
 class _UserDetailPageState extends State<UserDetailPage> {
+  List<Area> allAreas = [];
+  List<Area> userAreas = [];
   late EncryptedSharedPreferences _prefs;
   String? _token;
   String? _userType;
@@ -46,6 +52,26 @@ class _UserDetailPageState extends State<UserDetailPage> {
       _token = tmpToken!;
       _userType = tmpType!;
     });
+    initAreas();
+  }
+
+  void initAreas() async {
+    try {
+      List<Area> tmpAllAreas = await getAllAreas(_token!);
+      List<Area> tmpUserAreas = await getAllUserAreas(_token!, widget.utente.mail);
+
+      setState(() {
+        allAreas = tmpAllAreas;
+        userAreas = tmpUserAreas;
+      });
+    }  on HttpException catch (e) {
+      await _prefs.clear();
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+    }
   }
 
   @override
@@ -58,8 +84,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomRight: Radius.circular(20), bottomLeft: Radius.circular(20))),
+        centerTitle: true,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -117,7 +142,14 @@ class _UserDetailPageState extends State<UserDetailPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return modificaVisibilitaDialog(context, allAreas, userAreas, widget.utente, _token!, _prefs);
+                                    }
+                                );
+                              },
                               child: const Text('Modifica vista')
                           ),
                         ),
@@ -141,4 +173,81 @@ class _UserDetailPageState extends State<UserDetailPage> {
       ),
     );
   }
+}
+
+
+Widget modificaVisibilitaDialog(BuildContext context, List<Area> allAreas, List<Area> userAreas, User utente, String token, EncryptedSharedPreferences prefs) {
+  List<bool> isCheckedList = List.generate(allAreas.length, (index) => userAreas.contains(allAreas[index]));
+
+  return StatefulBuilder(
+    builder: (context, setState) {
+      return AlertDialog(
+        title: const Center(
+          child: Text('Visibilità', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+        content: SizedBox(
+          width: kIsWeb ? 800 : double.maxFinite,
+          height: kIsWeb ? 600 : 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Seleziona le aree che l\'utente può visualizzare', textAlign: TextAlign.center),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: allAreas.length,
+                  itemBuilder: (context, index) {
+                    return MyGenericListElement(
+                      leading: const Icon(Icons.room),
+                      title: allAreas[index].nome,
+                      trailing: Checkbox(
+                        value: isCheckedList[index],
+                        onChanged: (value) {
+                          setState(() {
+                            isCheckedList[index] = value ?? false;
+                            if (isCheckedList[index]) {
+                              userAreas.add(allAreas[index]);
+                            } else {
+                              userAreas.remove(allAreas[index]);
+                            }
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                List<String> newUserAreas = [];
+                for(Area area in userAreas) {
+                  newUserAreas.add(area.nome);
+                }
+                try {
+                  String res = await updateUserAreas(utente.mail, newUserAreas, token);
+                  Navigator.of(context).pop();
+                  Utils.showSnackBar(context, 'VISTA MODIFICATA', res, false);
+                } on HttpException catch (e) {
+                  await prefs.clear();
+                  Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                  Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                          builder: (context) => const LoginPage()),
+                          (Route<dynamic> route) => false);
+                } catch (e) {
+                  Navigator.of(context).pop();
+                  Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                }
+              },
+              child: const Text('Conferma'),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }

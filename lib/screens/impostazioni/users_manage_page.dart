@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/registration_page.dart';
@@ -52,17 +54,22 @@ class _UsersManagePageState extends State<UsersManagePage> {
   }
 
   void initUtenti() async {
-    List<User> tmpUtenti;
     try {
-      tmpUtenti = await getAllUsers(_token!);
+      List<User> tmpUtenti = await getAllUsers(_token!);
+      setState(() {
+        utenti = tmpUtenti;
+      });
+    } on HttpException catch (e) {
+      await _prefs.clear();
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
     } on Exception catch (e) {
       Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
       return;
     }
-
-    setState(() {
-      utenti = tmpUtenti;
-    });
   }
 
   @override
@@ -76,11 +83,6 @@ class _UsersManagePageState extends State<UsersManagePage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                bottomRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20))),
         title: const Text('Gestione Utenti'),
       ),
       body: SafeArea(
@@ -103,7 +105,7 @@ class _UsersManagePageState extends State<UsersManagePage> {
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          Padding(
+                          if (utenti.isNotEmpty) ... [Padding(
                             padding: const EdgeInsets.symmetric(vertical: 5),
                             child: ListView.builder(
                               shrinkWrap: true,
@@ -121,7 +123,7 @@ class _UsersManagePageState extends State<UsersManagePage> {
                                     trailing: IconButton(
                                       onPressed: () {
                                           showDialog(
-                                              context: context, 
+                                              context: context,
                                               builder: (context) {
                                                 return ConfirmDelete(onConfirm: () async {
                                                   try {
@@ -129,7 +131,14 @@ class _UsersManagePageState extends State<UsersManagePage> {
                                                     Utils.showSnackBar(context, 'UTENTE ELIMINATO', res, false);
                                                     Navigator.of(context).pop();
                                                     setState(() {utenti.removeAt(index);});
-                                                  } catch (e) {
+                                                  } on HttpException catch (e) {
+                                                    await _prefs.clear();
+                                                    Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                                                    Navigator.of(context).pushAndRemoveUntil(
+                                                        MaterialPageRoute(
+                                                            builder: (context) => const LoginPage()),
+                                                            (Route<dynamic> route) => false);
+                                                  } on Exception catch (e) {
                                                     Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
                                                     Navigator.of(context).pop();
                                                   }
@@ -143,7 +152,14 @@ class _UsersManagePageState extends State<UsersManagePage> {
                                 );
                               },
                             ),
-                          ),
+                          )] else ... [
+                            const Center(
+                                child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 5),
+                              child: Text('Nessun utente registrato'),
+                                )
+                            )
+                          ],
                           Center(
                             child: ElevatedButton(
                               onPressed: () {

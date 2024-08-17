@@ -1,22 +1,18 @@
+import 'dart:io';
+
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
 
-class Notifica {
-  Notifica(this.trigger, this.valore, this.isActive);
-
-  final String trigger;
-  final double valore;
-  bool isActive;
-}
-
 class SensorDetailPage extends StatefulWidget {
-  const SensorDetailPage({super.key});
+  final Sensor sensor;
+  const SensorDetailPage({super.key, required this.sensor});
 
   @override
   State<SensorDetailPage> createState() => _SensorDetailPageState();
@@ -26,9 +22,16 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
   DateFormat dateTimeFormatter = DateFormat('yyyy/MM/dd kk:mm');
   DateTime? _startDateTime;
   DateTime? _endDateTime;
+  final DateTime _defaultStart =
+  DateTime.now().subtract(const Duration(days: 7));
+  final DateTime _defaultEnd =
+  DateTime.now().subtract(const Duration(minutes: 10));
+  List<FlSpot> history = [];
+
   bool _isExpanded = false;
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _valueController = TextEditingController();
-  List<Notifica> notifiche = [];
+  List<NotificaSensore> notifiche = [];
   late EncryptedSharedPreferences _prefs;
   String? _token;
   String? _userType;
@@ -38,12 +41,13 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      lastDate: DateTime.now(),
     );
 
     if (pickedDate != null) {
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
+        initialEntryMode: TimePickerEntryMode.dialOnly,
         initialTime: TimeOfDay.fromDateTime(DateTime.now()),
       );
 
@@ -56,29 +60,51 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
           pickedTime.minute,
         );
 
-        setState(() {
-          if (isStartDate) {
-            if(_endDateTime != null) {
-              if (pickedDateTime.isBefore(_endDateTime!)) {
+        if (isStartDate) {
+          if (_endDateTime != null) {
+            if (pickedDateTime.isBefore(_endDateTime!)) {
+              setState(() {
                 _startDateTime = pickedDateTime;
-              } else {
-                Utils.showSnackBar(context, 'Attenzione', 'La data di inizio deve essere precedente a quella di fine', true);
-              }
+              });
             } else {
-              _startDateTime = pickedDateTime;
+              Utils.showSnackBar(
+                  context,
+                  'Attenzione',
+                  'La data di inizio deve essere precedente a quella di fine',
+                  true);
             }
           } else {
-            if(_startDateTime != null) {
-              if (pickedDateTime.isAfter(_startDateTime!)) {
-                _endDateTime = pickedDateTime;
-              } else {
-                Utils.showSnackBar(context, 'Attenzione', 'La data di fine deve essere successiva a quella di inizio', true);
-              }
-            } else {
-              _endDateTime = pickedDateTime;
-            }
+            setState(() {
+              _startDateTime = pickedDateTime;
+            });
           }
-        });
+        } else {
+          if (_startDateTime != null) {
+            if (pickedDateTime.isAfter(_startDateTime!)) {
+              List<FlSpot> tmpHistory =
+                  await getSensorReadings(widget.sensor.id,
+                  _startDateTime!, pickedDateTime, _token!);
+              setState(() {
+                _endDateTime = pickedDateTime;
+                history = tmpHistory;
+              });
+            } else {
+              Utils.showSnackBar(
+                  context,
+                  'Attenzione',
+                  'La data di fine deve essere successiva a quella di inizio',
+                  true);
+            }
+          } else {
+            List<FlSpot> tmpHistory =
+            await getSensorReadings(widget.sensor.id,
+                _startDateTime!, pickedDateTime, _token!);
+            setState(() {
+              _endDateTime = pickedDateTime;
+              history = tmpHistory;
+            });
+          }
+        }
       }
     }
   }
@@ -111,7 +137,36 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
       _token = tmpToken!;
       _userType = tmpType!;
     });
+
+    await initHistory(_defaultEnd, _defaultEnd);
   }
+
+  Future<void> initHistory(DateTime start, DateTime end) async {
+    try {
+      List<FlSpot> tmpHistory = await getSensorReadings(widget.sensor.id, start, end, _token!);
+      setState(() {
+        history = tmpHistory;
+      });
+    } on HttpException catch (e) {
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pop();
+    }
+    //await initNotifiche();
+  }
+
+  /*
+  Future<void> initNotifiche() async {
+    try {
+      List<FlSpot> tmpHistory = await getNotify();
+      setState(() {
+        notifiche = tmpNotifiche;
+      });
+    } on HttpException catch (e) {
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pop();
+    }
+  }
+  */
 
   @override
   void initState() {
@@ -124,12 +179,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                bottomRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20))),
-        title: const Text('Home'),
+        title: const Text('Dettaglio'),
         actions: [
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -180,9 +230,9 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: SingleChildScrollView(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -196,16 +246,17 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            RadiusChart(chartData: [ChartData('', 20)]),
-                            const Text(
-                              '20°C',
-                              style: TextStyle(
+                            RadiusChart(chartData: [ChartData('', widget.sensor.lettura)]),
+                            Text(
+                              '${widget.sensor.lettura}',
+                              style: const TextStyle(
                                   fontSize: 50, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
                       ),
-                      title: 'nome sensore',
+                      title: widget.sensor.nome,
+                      subtitle: '${widget.sensor.lettura} ${widget.sensor.unitaMisura}',
                     ),
                     Card(
                       elevation: 10,
@@ -213,8 +264,18 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                         padding: const EdgeInsets.all(25),
                         child: Column(
                           children: [
+                            if (history.isNotEmpty) ... [AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: SensorLineChart(
+                                pointList: history,
+                                start: _startDateTime == null ? _defaultStart : _startDateTime!,
+                                  end: _endDateTime == null ? _defaultEnd : _endDateTime!
+                              ),
+                            )] else ... [
+                              const Center(child: Text('Non sono presenti letture nel periodo specificato'))
+                            ],
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 20),
+                              padding: const EdgeInsets.only(top: 20),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
@@ -222,29 +283,20 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                                     onPressed: () => _selectDateTime(context, true),
                                     child: Text(
                                       _startDateTime == null
-                                          ? 'Data di inizio'
-                                          : 'Inizio: ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+                                          ? 'Da ${dateTimeFormatter.format(_defaultStart.toLocal())}'
+                                          : 'Da ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
                                     ),
                                   ),
                                   TextButton(
                                     onPressed: () => _selectDateTime(context, false),
                                     child: Text(
                                       _endDateTime == null
-                                          ? 'Data di fine'
-                                          : 'Fine: ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                                          ? 'A ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
+                                          : 'A ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                            const AspectRatio(
-                              aspectRatio: 16 / 9,
-                              child: SensorLineChart(pointList: [
-                                FlSpot(200, 10),
-                                FlSpot(400, 20),
-                                FlSpot(600, 30),
-                                FlSpot(800, 40)
-                              ]),
                             ),
                           ],
                         ),
@@ -267,24 +319,55 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                           return MyGenericListElement(
                             leading: const Icon(Icons.notifications),
                             title:
-                            'Avvisami quando la lettura è ${notifiche[index].trigger} ${notifiche[index].valore}',
+                            'Avvisami quando la lettura è ${notifiche[index].trigger} ${notifiche[index].benchmark}',
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
                                   onPressed: () {
-                                    setState(() {
-                                      notifiche.removeAt(index);
-                                    });
+                                    showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return ConfirmDelete(onConfirm: () async {
+                                            try {
+                                              String res = await deleteNotify(notifiche[index].id, _token!);
+                                              Utils.showSnackBar(context, 'NOTIFICA ELIMINATA', res, false);
+                                              Navigator.of(context).pop();
+                                              //initNotifiche();
+                                            } on HttpException catch (e) {
+                                              await _prefs.clear();
+                                              Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                                              Navigator.of(context).pushAndRemoveUntil(
+                                                  MaterialPageRoute(
+                                                      builder: (context) => const LoginPage()),
+                                                      (Route<dynamic> route) => false);
+                                            } on Exception catch (e) {
+                                              Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                              Navigator.of(context).pop();
+                                            }
+                                          });
+                                        }
+                                    );
                                   },
                                   icon: const Icon(Icons.delete_rounded),
                                 ),
                                 Switch(
-                                  value: notifiche[index].isActive,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      notifiche[index].isActive = value;
-                                    });
+                                  value: notifiche[index].status,
+                                  onChanged: (value) async {
+                                    try {
+                                      String res = await updateNotify(notifiche[index].id, _token!);
+                                      Utils.showSnackBar(context, 'STATO NOTIFICA AGGIORNATO', res, false);
+                                      //initNotifiche();
+                                    } on HttpException catch (e) {
+                                      await _prefs.clear();
+                                      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                          MaterialPageRoute(
+                                              builder: (context) => const LoginPage()),
+                                              (Route<dynamic> route) => false);
+                                    } on Exception catch (e) {
+                                      Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                    }
                                   },
                                 ),
                               ],
@@ -300,11 +383,22 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                             context: context,
                             builder: (context) {
                               return NotifyDialog(
+                                nameController: _nameController,
                                 valueController: _valueController,
-                                addNotifica: (String trigger, double valore) {
-                                  setState(() {
-                                    notifiche.add(Notifica(trigger, valore, true));
-                                  });
+                                addNotifica: (String nome, String trigger, double valore) async {
+                                  try {
+                                    String res = await addNotify(nome, trigger, valore, _token!);
+                                    Utils.showSnackBar(super.context, 'NOTIFICA AGGIUNTA', res, false);
+                                  } on HttpException catch (e) {
+                                    await _prefs.clear();
+                                    Utils.showSnackBar(super.context, 'ERRORE', e.message, true);
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                            builder: (context) => const LoginPage()),
+                                            (Route<dynamic> route) => false);
+                                  } on Exception catch (e) {
+                                    Utils.showSnackBar(super.context, 'ERRORE', e.toString(), true);
+                                  }
                                 },
                               );
                             },
@@ -325,11 +419,10 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
 }
 
 class NotifyDialog extends StatefulWidget {
+  final TextEditingController nameController;
   final TextEditingController valueController;
-  final void Function(String trigger, double valore) addNotifica;
-  const NotifyDialog(
-      {super.key, required this.valueController, required this.addNotifica});
-
+  final void Function(String nome, String trigger, double valore) addNotifica;
+  const NotifyDialog({super.key, required this.valueController, required this.addNotifica, required this.nameController});
   @override
   State<NotifyDialog> createState() => _NotifyDialogState();
 }
@@ -356,6 +449,17 @@ class _NotifyDialogState extends State<NotifyDialog> {
                 key: _formKey,
                 child: Column(
                   children: [
+                    MyTextField(
+                      validator: (valore) {
+                        if (valore == null || valore.isEmpty) {
+                          return 'Inserisci un nome!';
+                        }
+                        return null;
+                      },
+                      hint: 'Nome',
+                      controller: widget.nameController,
+                      onlyNumbers: false,
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -392,7 +496,6 @@ class _NotifyDialogState extends State<NotifyDialog> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -430,8 +533,7 @@ class _NotifyDialogState extends State<NotifyDialog> {
           child: ElevatedButton(
             onPressed: () {
               if (_formKey.currentState!.validate()) {
-                widget.addNotifica(selectedValue!,
-                    double.parse(widget.valueController.text));
+                widget.addNotifica(widget.nameController.text, selectedValue!, double.parse(widget.valueController.text));
                 Navigator.of(context).pop();
               }
             },
@@ -443,3 +545,33 @@ class _NotifyDialogState extends State<NotifyDialog> {
   }
 }
 
+class ConfirmDelete extends StatelessWidget {
+  final VoidCallback onConfirm;
+  const ConfirmDelete({super.key, required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Center(
+          child: Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))
+      ),
+      actions: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancella')
+            ),
+            ElevatedButton(
+                onPressed: onConfirm,
+                child: const Text('Conferma')
+            ),
+          ],
+        )
+      ],
+    );
+  }
+}

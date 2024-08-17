@@ -6,26 +6,20 @@ import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
 
-class ChangePasswordPage extends StatefulWidget {
-  final User? utente;
-  const ChangePasswordPage({super.key, this.utente});
+class BaseApiUrlSetPage extends StatefulWidget {
+  const BaseApiUrlSetPage({super.key});
 
   @override
-  State<ChangePasswordPage> createState() => _ChangePasswordPageState();
+  State<BaseApiUrlSetPage> createState() => _BaseApiUrlSetPageState();
 }
 
-class _ChangePasswordPageState extends State<ChangePasswordPage> {
+class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
   late EncryptedSharedPreferences _prefs;
-  String? _token;
-  String? _userType;
   final _formKey = GlobalKey<FormState>();
-  final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
+  final _urlController = TextEditingController();
 
   void initPreferences() async {
     EncryptedSharedPreferences tmp;
-    String? tmpToken = '';
-    String? tmpType = '';
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
@@ -41,14 +35,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     setState(() {
       _prefs = tmp;
-    });
-
-    tmpToken = _prefs.getString('token');
-    tmpType = _prefs.getString('tipo');
-
-    setState(() {
-      _token = tmpToken!;
-      _userType = tmpType!;
     });
   }
 
@@ -66,7 +52,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         title: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Modifica'),
+            Text('Base Api Url'),
           ],
         ),
       ),
@@ -86,7 +72,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Modifica password', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                      const Text('Inserisci il base url dell\'api', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
                       Padding(
                         padding: const EdgeInsets.only(top: 30),
                         child: Form(
@@ -99,39 +85,19 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                   child: TextFormField(
                                       validator: (valore) {
                                         if (valore == null || valore.isEmpty) {
-                                          return 'Inserisci la nuova password';
+                                          return 'Inserisci l\'URL';
                                         }
                                         return null;
                                       },
-                                      obscureText: true,
                                       decoration: InputDecoration(
-                                        labelText: 'Password',
+                                        labelText: 'URL',
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
                                         ),
                                       ),
-                                      controller: _passwordController
+                                      controller: _urlController
                                   ),
-                                ),
-                                TextFormField(
-                                    validator: (valore) {
-                                      if (valore == null || valore.isEmpty) {
-                                        return 'Reinserisci la password';
-                                      }
-                                      if (valore != _passwordController.text) {
-                                        return 'Le password non coincidono';
-                                      }
-                                      return null;
-                                    },
-                                    obscureText: true,
-                                    decoration: InputDecoration(
-                                      labelText: 'Conferma la password',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    controller: _confirmController
-                                ),
+                                )
                               ],
                             )
                         ),
@@ -143,16 +109,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                               onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
                                   try {
-                                    String res = await changePassword(_token!, widget.utente?.mail, _passwordController.text);
-                                    Utils.showSnackBar(context, 'PASSWORD MODIFICATA', res, false);
-                                    Navigator.of(context).pop();
-                                  } on HttpException catch (e) {
-                                    await _prefs.clear();
-                                    Utils.showSnackBar(context, 'ERRORE', e.message, true);
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                            builder: (context) => const LoginPage()),
-                                            (Route<dynamic> route) => false);
+                                    if (await _prefs.setString('url', _urlController.text)) {
+                                      await checkBaseUrl();
+                                      Utils.showSnackBar(context,
+                                          'BASE URL IPOSTATO', 'Procedi al log-In', false);
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const LoginPage()),
+                                          (Route<dynamic> route) => false);
+                                    } else {
+                                      Utils.showSnackBar(context, 'ERRORE', 'Riavvia l\'app e riprova!', true);
+                                    }
                                   } on Exception catch (e) {
                                     Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
                                     Navigator.of(context).pop();

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
@@ -68,8 +70,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomRight: Radius.circular(20), bottomLeft: Radius.circular(20))),
         title: const Text('Registrazione'),
       ),
 
@@ -102,6 +102,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                         if (valore == null || valore.isEmpty) {
                                           return 'Inserisci un nome!';
                                         }
+                                        if(valore.length > 15) {
+                                          return 'Massimo 20 caratteri!';
+                                        }
                                         return null;
                                       },
                                       hint: 'Nome',
@@ -112,6 +115,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                       validator: (valore) {
                                         if (valore == null || valore.isEmpty) {
                                           return 'Inserisci un cognome!';
+                                        }
+                                        if(valore.length > 15) {
+                                          return 'Massimo 20 caratteri!';
                                         }
                                         return null;
                                       },
@@ -124,6 +130,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                         if (valore == null || valore.isEmpty) {
                                           return 'Inserisci un contatto!';
                                         }
+                                        if(valore.length != 10) {
+                                          return 'Inserisci un contatto valido!\n(10 cifre)';
+                                        }
                                         return null;
                                       },
                                       hint: 'Contatto principale',
@@ -131,6 +140,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                       onlyNumbers: true
                                   ),
                                   MyTextField(
+                                      validator: (valore) {
+                                        if (valore != null && valore.isNotEmpty) {
+                                          if(valore.length != 10) {
+                                            return 'Inserisci un contatto valido!\n(10 cifre)';
+                                          }
+                                        }
+                                        return null;
+                                      },
                                       hint: 'Contatto secondario (Opzionale)',
                                       controller: _secondNumberController,
                                       onlyNumbers: true
@@ -210,6 +227,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                         false);
                                     Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
                                     Navigator.of(context).push(MaterialPageRoute(builder: (context) => const UsersManagePage()));
+                                  } on HttpException catch (e){
+                                    await _prefs.clear();
+                                    Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                            builder: (context) => const LoginPage()),
+                                            (Route<dynamic> route) => false);
                                   } on Exception catch (e) {
                                     Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
                                     return;

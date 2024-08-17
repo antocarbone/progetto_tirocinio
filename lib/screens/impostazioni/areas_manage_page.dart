@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
@@ -52,17 +54,20 @@ class _AreasManagePageState extends State<AreasManagePage> {
   }
 
   void initAreas() async {
-    List<Area> tmp;
     try {
-      tmp = await getAllAreas(_token!);
-    } on Exception catch (e) {
-      Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
-      return;
-    }
+      List<Area> tmp = await getAllAreas(_token!);
 
-    setState(() {
-      aree = tmp;
-    });
+      setState(() {
+        aree = tmp;
+      });
+    } on HttpException catch (e) {
+      await _prefs.clear();
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+    }
   }
 
   @override
@@ -76,11 +81,6 @@ class _AreasManagePageState extends State<AreasManagePage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                bottomRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20))),
         title: const Text('Gestione Aree'),
       ),
       body: SafeArea(
@@ -92,73 +92,80 @@ class _AreasManagePageState extends State<AreasManagePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  const Padding(
+                  if(aree.isNotEmpty) ... [const Padding(
                     padding: EdgeInsets.symmetric(vertical: 10),
                     child: Center(
                         child: Text('Le tue aree',
                             style: TextStyle(
                                 fontSize: 25, fontWeight: FontWeight.bold))),
                   ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 5),
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: aree.length,
-                              itemBuilder: (context, index) {
-                                return MyGenericListElement(
-                                  leading: const Icon(Icons.room),
-                                  title: aree[index].nome,
-                                  trailing: IconButton(
-                                    onPressed: () {
-                                      showDialog(
-                                          context: context,
-                                          builder: (context) {
-                                            return ConfirmDelete(onConfirm: () async {
-                                              try {
-                                                String res = await deleteArea(aree[index].nome, _token!);
-                                                Utils.showSnackBar(context, 'AREA ELIMINATA', res, false);
-                                                Navigator.of(context).pop();
-                                                initAreas();
-                                              } catch (e) {
-                                                Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
-                                                Navigator.of(context).pop();
-                                              }
-                                            });
-                                          }
-                                      );
-                                    },
-                                    icon: const Icon(Icons.delete_rounded),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                showDialog(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: aree.length,
+                      itemBuilder: (context, index) {
+                        return MyGenericListElement(
+                          leading: const Icon(Icons.room),
+                          title: aree[index].nome,
+                          trailing: IconButton(
+                            onPressed: () {
+                              showDialog(
                                   context: context,
                                   builder: (context) {
-                                    return AddAreaDialog(
-                                      token: _token!,
-                                      valueController: _valueController,
-                                      addArea: () {
+                                    return ConfirmDelete(onConfirm: () async {
+                                      try {
+                                        String res = await deleteArea(aree[index].nome, _token!);
+                                        Utils.showSnackBar(context, 'AREA ELIMINATA', res, false);
+                                        Navigator.of(context).pop();
                                         initAreas();
-                                      },
-                                    );
-                                  },
-                                );
-                              },
-                              child: const Text('Aggiungi un\'area'),
-                            ),
+                                      } on HttpException catch (e) {
+                                        await _prefs.clear();
+                                        Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                                        Navigator.of(context).pushAndRemoveUntil(
+                                            MaterialPageRoute(
+                                                builder: (context) => const LoginPage()),
+                                                (Route<dynamic> route) => false);
+                                      } on Exception catch (e) {
+                                        Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                        Navigator.of(context).pop();
+                                      }
+                                    });
+                                  }
+                              );
+                            },
+                            icon: const Icon(Icons.delete_rounded),
                           ),
-                        ],
-                      ),
+                        );
+                      },
+                    ),
+                  )] else ... [
+                    const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 5),
+                          child: Text('Non sono presenti aree'),
+                        )
+                    )
+                  ],
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AddAreaDialog(
+                              token: _token!,
+                              valueController: _valueController,
+                              addArea: () {
+                                initAreas();
+                              },
+                              prefs: _prefs,
+                            );
+                          },
+                        );
+                      },
+                      child: const Text('Aggiungi un\'area'),
                     ),
                   ),
                 ],
@@ -175,7 +182,8 @@ class AddAreaDialog extends StatefulWidget {
   final TextEditingController valueController;
   final VoidCallback addArea;
   final String token;
-  const AddAreaDialog({super.key, required this.valueController, required this.addArea, required this.token});
+  final EncryptedSharedPreferences prefs;
+  const AddAreaDialog({super.key, required this.valueController, required this.addArea, required this.token, required this.prefs});
 
   @override
   State<AddAreaDialog> createState() => _AddAreaDialogState();
@@ -204,6 +212,9 @@ class _AddAreaDialogState extends State<AddAreaDialog> {
                     if (valore == null || valore.isEmpty) {
                       return 'Inserisci un nome!';
                     }
+                    if(valore.length > 20) {
+                      return 'Massimo 20 caratteri!';
+                    }
                     return null;
                   },
                   hint: 'Inserisci qui il nome',
@@ -222,8 +233,14 @@ class _AddAreaDialogState extends State<AddAreaDialog> {
               if (_formKey.currentState!.validate()) {
                 try {
                   String res = await addArea(widget.valueController.text  , widget.token);
-                  print(res);
                   Utils.showSnackBar(context, 'AREA AGGIUNTA', res, false);
+                } on HttpException catch (e) {
+                  await widget.prefs.clear();
+                  Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                  Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                          builder: (context) => const LoginPage()),
+                          (Route<dynamic> route) => false);
                 } on Exception catch (e) {
                   Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
                 }

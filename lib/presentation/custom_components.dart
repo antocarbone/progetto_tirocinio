@@ -1,3 +1,4 @@
+import 'package:dashboard_tirocinio/screens/dashboard/binary_sensor_detail_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/node_status_history.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/sensor_detail_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
@@ -115,16 +116,16 @@ class RadiusChart extends StatelessWidget {
     return SfCircularChart(
       series: [
         RadialBarSeries<ChartData, String>(
-            maximumValue: 50,
+            maximumValue: 100,
             radius: '70%',
             innerRadius: '90%',
             dataSource: chartData,
             cornerStyle: CornerStyle.bothCurve,
             xValueMapper: (ChartData data, _) => data.x,
             yValueMapper: (ChartData data, _) => data.y,
-            pointColorMapper: (ChartData data, _) => Colors.orangeAccent.shade400,
+            pointColorMapper: (ChartData data, _) => Theme.of(context).primaryColor,
             dataLabelMapper: (ChartData data, _) => '',
-            trackColor: Colors.orange.shade100,
+            trackColor: Theme.of(context).cardColor,
             dataLabelSettings: const DataLabelSettings(isVisible: true))
       ],
     );
@@ -141,16 +142,14 @@ class ChartData {
 
 // WIDGET CHE RAPPRESENTA UN SENSORE CON IL BAR CHART, IL VALORE LETTO E IL SUO NOME
 class MySensorInfo extends StatelessWidget {
-  final double sensorValue;
-  final String sensorName;
-  final String sensorUnitMisura;
-  const MySensorInfo({super.key, required this.sensorValue, required this.sensorName, required this.sensorUnitMisura});
+  final Sensor sensor;
+  const MySensorInfo({super.key, required this.sensor});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SensorDetailPage()));
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => SensorDetailPage(sensor: sensor)));
       },
       child: Card(
         elevation: 10,
@@ -160,12 +159,20 @@ class MySensorInfo extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Text(
+                  sensor.nome,
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    RadiusChart(chartData: [ChartData('', sensorValue)]),
+                    RadiusChart(chartData: [ChartData('', sensor.lettura)]),
                     Text(
-                      '$sensorValue $sensorUnitMisura',
+                      '${sensor.lettura}',
                       style: const TextStyle(
                         fontSize: 50,
                         fontWeight: FontWeight.bold,
@@ -174,13 +181,12 @@ class MySensorInfo extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  sensorName,
+                  '${sensor.lettura} ${sensor.unitaMisura}',
                   style: const TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 30,
                   ),
                   textAlign: TextAlign.center,
-                ),
+                )
               ],
             ),
           ),
@@ -192,52 +198,58 @@ class MySensorInfo extends StatelessWidget {
 
 // WIDGET CHE RAPPRESENTA UN SENSORE BINARIO CON IL SUO VALORE NOME E TIMESTAMP
 class MyBinarySensorInfo extends StatelessWidget {
-  final bool sensorValue;
-  final String sensorName;
-  final String iconCode;
-  final String trueString;
-  final String falseString;
-  const MyBinarySensorInfo({super.key, required this.sensorValue, required this.sensorName, required this.iconCode, required this.trueString, required this.falseString});
+  final BinarySensor sensor;
+  const MyBinarySensorInfo({super.key, required this.sensor});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 10,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: FittedBox(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(flex: 5, child: Icon(MdiIcons.fromString(iconCode), size: 500)),
-              Flexible(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    sensorName,
-                    style: const TextStyle(
-                      fontSize: 50,
-                      fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => BinarySensorDetailPage(sensor: sensor)));
+      },
+      child: Card(
+        elevation: 10,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: FittedBox(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  flex: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: FittedBox(
+                      fit: BoxFit.fitWidth,
+                      child: Text(
+                        sensor.nome,
+                        style: const TextStyle(
+                          fontSize: 50,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
-              ),
-              Flexible(
-                flex: 1,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    sensorValue ? trueString : falseString,
-                    style: const TextStyle(
-                      fontSize: 25,
+                Flexible(flex: 4, child: FittedBox(child: Icon(MdiIcons.fromString(sensor.codiceIcona), size: 250))),
+                Flexible(
+                  flex: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: FittedBox(
+                      child: Text(
+                        sensor.valore ? sensor.stringaTrue : sensor.stringaFalse,
+                        style: const TextStyle(
+                          fontSize: 30,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -249,18 +261,17 @@ class MyBinarySensorInfo extends StatelessWidget {
 // WIDGET CHE RAPPRESENTA UN NODO CON I SUOI SENSORI COME LISTA SCROLLABILE ORIZZONTALMENTE
 // OGNI SENSORE è CLICCABILE E PORTA ALLA PROPRIA PAGINA DI DETTAGLIO
 class MyNodeSummary extends StatefulWidget {
-  final String nodeName;
-  final String nodeStatus;
+  final Nodo nodo;
   final List<Sensor> sensors;
   final List<BinarySensor> binarySensors;
+  final String token;
 
   const MyNodeSummary({
     super.key,
-    required this.nodeName,
-    required this.nodeStatus,
+    required this.nodo,
     required this.sensors,
     required this.binarySensors,
-  });
+    required this.token});
 
   @override
   State<MyNodeSummary> createState() => _MyNodeSummaryState();
@@ -291,7 +302,7 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  widget.nodeName,
+                  widget.nodo.nome,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -357,11 +368,11 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
                       showDialog(
                         context: context,
                         builder: (context) {
-                          return const NodeStatusHistory();
+                          return NodeStatusHistory(nodeId: widget.nodo.id, token: widget.token);
                         },
                       );
                     },
-                    child: Text('stato: ${widget.nodeStatus}',
+                    child: Text('stato: ${widget.nodo.status}',
                         style: const TextStyle(color: Colors.black)),
                   ),
                 ),
@@ -382,19 +393,9 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: list is List<Sensor>
-              ? MySensorInfo(
-            sensorValue: list[index].lettura,
-            sensorName: list[index].nome,
-            sensorUnitMisura: list[index].unitaMisura,
-          )
+              ? MySensorInfo(sensor: widget.sensors[index])
               : list is List<BinarySensor>
-              ? MyBinarySensorInfo(
-            sensorValue: list[index].valore,
-            sensorName: list[index].nome,
-            iconCode: list[index].codiceIcona,
-            trueString: list[index].stringaTrue,
-            falseString: list[index].stringaFalse,
-          )
+              ? MyBinarySensorInfo(sensor: widget.binarySensors[index])
               : null,
         );
       },
@@ -432,7 +433,9 @@ class MyUserButton extends StatelessWidget {
 // LO STORICO DELLE LETTURE DEI SENSORI
 class SensorLineChart extends StatelessWidget {
   final List<FlSpot> pointList;
-  const SensorLineChart({super.key, required this.pointList});
+  final DateTime start;
+  final DateTime end;
+  const SensorLineChart({super.key, required this.pointList, required this.start, required this.end});
 
   @override
   Widget build(BuildContext context) {
@@ -441,41 +444,58 @@ class SensorLineChart extends StatelessWidget {
           lineTouchData: LineTouchData(
             enabled: true,
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (LineBarSpot touchedSpot) => const Color(0x5E935A39),
+              getTooltipColor: (LineBarSpot touchedSpot) => Theme.of(context).cardColor,
             ),
           ),
           gridData: FlGridData(
-            show: true,
+            show: false,
             drawHorizontalLine: true,
             verticalInterval: 100,
             horizontalInterval: 10,
             getDrawingVerticalLine: (value) {
-              return const FlLine(
-                color: Color(0xFF673F28),
+              return FlLine(
+                color: Theme.of(context).primaryColor,
                 strokeWidth: 1,
               );
             },
             getDrawingHorizontalLine: (value) {
-              return const FlLine(
-                color: Color(0xFF673F28),
+              return FlLine(
+                color: Theme.of(context).primaryColor,
                 strokeWidth: 1,
               );
             },
           ),
           titlesData: FlTitlesData(
             show: true,
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 25,
-                getTitlesWidget: lineChartBottomTitleWidgets,
-                interval: 1,
-              ),
-            ),
+            bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false,),),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                getTitlesWidget: lineChartLeftTitleWidgets,
+                getTitlesWidget: (value, meta) {
+                  var style = TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Theme.of(context).primaryColor,
+                  );
+                  String text;
+                  switch (value.toInt()) {
+                    case 0:
+                      text = '0';
+                      break;
+                    case 50:
+                      text = '50';
+                      break;
+                    case 100:
+                      text = '100';
+                      break;
+                    default:
+                      return Container();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(text, style: style, textAlign: TextAlign.right),
+                  );
+                },
                 reservedSize: 45,
                 interval: 1,
               ),
@@ -489,17 +509,17 @@ class SensorLineChart extends StatelessWidget {
           ),
           borderData: FlBorderData(
             show: true,
-            border: Border.all(color: const Color(0xFF673F28)),
+            border: Border.all(color: Theme.of(context).primaryColor),
           ),
           minX: 0,
-          maxX: 1440,
+          maxX: end.toUtc().millisecondsSinceEpoch/60000-start.toUtc().millisecondsSinceEpoch/60000,
           minY: 0,
-          maxY: 50,
+          maxY: 100,
           lineBarsData: [
             LineChartBarData(
               spots: pointList,
               isCurved: true,
-              color: const Color(0xFF673F28),
+              color: Theme.of(context).primaryColor,
               barWidth: 5,
               isStrokeCapRound: true,
               dotData: const FlDotData(
@@ -507,59 +527,11 @@ class SensorLineChart extends StatelessWidget {
               ),
               belowBarData: BarAreaData(
                 show: true,
-                color: const Color(0x32673F28),
+                color: Theme.of(context).primaryColor.withAlpha(50),
               ),
             ),
           ],
         )
-    );
-  }
-
-  Widget lineChartBottomTitleWidgets(double value, TitleMeta meta) {
-    const style = TextStyle(
-      fontWeight: FontWeight.bold,
-      fontSize: 14,
-      color: Color(0xFF673F28),
-    );
-    Widget text;
-    switch (value.toInt()) {
-      case 720:
-        text = const Text('Last 24 Hours', style: style);
-        break;
-      default:
-        text = const Text('', style: style);
-        break;
-    }
-
-    return SideTitleWidget(
-      axisSide: meta.axisSide,
-      child: text,
-    );
-  }
-
-  Widget lineChartLeftTitleWidgets(double value, TitleMeta meta) {
-    const style = TextStyle(
-      fontWeight: FontWeight.bold,
-      fontSize: 12,
-      color: Color(0xFF673F28),
-    );
-    String text;
-    switch (value.toInt()) {
-      case 0:
-        text = '0%';
-        break;
-      case 50:
-        text = '50%';
-        break;
-      case 100:
-        text = '100%';
-        break;
-      default:
-        return Container();
-    }
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: Text(text, style: style, textAlign: TextAlign.right),
     );
   }
 }

@@ -124,11 +124,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.orangeAccent.shade200,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                bottomRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20))),
+        centerTitle: true,
         title: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

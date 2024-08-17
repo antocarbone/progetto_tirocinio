@@ -45,6 +45,8 @@ dependencies:
   material_design_icons_flutter: ^7.0.7296
   email_validator: ^2.1.17
   encrypt_shared_preferences: ^0.7.3
+  google_fonts: ^6.2.1
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -69,9 +71,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - url.env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
