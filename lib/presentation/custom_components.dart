@@ -2,6 +2,7 @@ import 'package:dashboard_tirocinio/screens/dashboard/binary_sensor_detail_page.
 import 'package:dashboard_tirocinio/screens/dashboard/node_status_history.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/sensor_detail_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
+import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -164,7 +165,7 @@ class MyHomePageInfo extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              Divider(),
+              const Divider(),
               Text('$value',
                 style: const TextStyle(
                   fontSize: 50,
@@ -303,6 +304,8 @@ class MyNodeSummary extends StatefulWidget {
   final Nodo nodo;
   final List<Sensor> sensors;
   final List<BinarySensor> binarySensors;
+  final VoidCallback onCancel;
+
   final String token;
 
   const MyNodeSummary({
@@ -310,7 +313,9 @@ class MyNodeSummary extends StatefulWidget {
     required this.nodo,
     required this.sensors,
     required this.binarySensors,
-    required this.token});
+    required this.token,
+    required this.onCancel
+  });
 
   @override
   State<MyNodeSummary> createState() => _MyNodeSummaryState();
@@ -418,7 +423,35 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
                             style: const TextStyle(color: Colors.black)),
                       ),
                       IconButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: const Center(
+                                        child: Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))
+                                    ),
+                                    actions: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: const Text('Cancella')
+                                          ),
+                                          ElevatedButton(
+                                              onPressed: widget.onCancel,
+                                              child: const Text('Conferma')
+                                          ),
+                                        ],
+                                      )
+                                    ],
+                                  );
+                                }
+                            );
+                          },
                           icon: const Icon(Icons.delete_rounded)
                       )
                     ],

@@ -283,21 +283,34 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                   mainAxisSpacing: 20
               ),
               itemCount: areaNodes.length,
-              itemBuilder: (context, index) {
-                if (nodeSensors.isEmpty) {
-                } else {
-                  return GridTile(
+              itemBuilder: (context, index) => GridTile(
                     child: FittedBox(child: MyNodeSummary(
                       nodo: areaNodes[index],
                       sensors: nodeSensors.isEmpty ? [] : nodeSensors[index]['sensors'],
                       binarySensors: nodeSensors.isEmpty ? [] : nodeSensors[index]['binary_sensors'],
                       token: _token!,
+                      onCancel: () async {
+                        try {
+                          String res = await deleteNode(areaNodes[index].id, _token!);
+                          Utils.showSnackBar(context, 'NODO ELIMINATO', res, false);
+                          Navigator.of(context).pop();
+                          initAreaNodes();
+                        } on HttpException catch (e) {
+                          await _prefs.clear();
+                          Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                          Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                  builder: (context) => const LoginPage()),
+                                  (Route<dynamic> route) => false);
+                        } on Exception catch (e) {
+                          Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                          Navigator.of(context).pop();
+                        }
+                      },
                     )
                     ),
-                  );
-                }
-              },
-            ) : const Text('Nessun nodo è collegato a quest\'area\nUsa la versione android dell\'app per aggiungerne uno', textAlign: TextAlign.center,),
+                  ),
+            ) : const Text('Nessun nodo è collegato a quest\'area\nUsa la versione android dell\'app per aggiungerne uno', textAlign: TextAlign.center),
           ),
         ),
       ),

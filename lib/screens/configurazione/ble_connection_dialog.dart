@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
+import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/configurazione/area_assign_page.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
+import 'package:encrypt_shared_preferences/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_esp_ble_prov/flutter_esp_ble_prov.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
@@ -14,6 +17,7 @@ class BleConnectionDialog extends StatefulWidget {
 }
 
 class _BleConnectionDialogState extends State<BleConnectionDialog> {
+  final Map<String, dynamic> brokerData = {};
   final _flutterEspBleProvPlugin = FlutterEspBleProv();
   double defaultPadding = 12;
   bool? _deviceScanned;
@@ -23,8 +27,47 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
 
   Map<String, dynamic>? _deviceInfos;
 
+  late EncryptedSharedPreferences _prefs;
+  String? _token;
+
+  Future<void> initPreferences() async {
+    EncryptedSharedPreferences tmp;
+    String? tmpToken = '';
+    try {
+      await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
+      tmp = EncryptedSharedPreferences.getInstance();
+
+    } on Exception catch (e) {
+      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+      return;
+    }
+
+    setState(() {
+      _prefs = tmp;
+    });
+
+    tmpToken = _prefs.getString('token');
+
+    setState(() {
+      _token = tmpToken!;
+    });
+  }
+
   Future<void> _initialize() async {
     final nodeData = widget.nodeData;
+
+    await initPreferences();
+    if (_token != null){
+      Map<String, dynamic> tmpBrokerData = await getBrokerInfo(_token!);
+      setState(() {
+        brokerData.addAll(tmpBrokerData);
+      });
+    }
+
     bool res = await scanBleDevices(nodeData['name']);
     setState(() {
       _deviceScanned = res;
@@ -107,7 +150,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
     try {
       res = await _flutterEspBleProvPlugin.sendCustomData(
           'mqtt-data',
-          '{"broker":"mqtt://cavuotohome.duckdns.org","username":"iot","password":"iotunisa","port":1883}',
+          jsonEncode(brokerData),
           name,
           pop);
       if (res != null) {
@@ -183,7 +226,6 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
           if (_checkJsonDeviceInfo(_deviceInfos)) ...[
             ElevatedButton(
               onPressed: () {
-                print(_deviceInfos);
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
                     builder: (context) => AreaAssignPage(
@@ -243,10 +285,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
 
   bool _checkJsonDeviceInfo(Map<String, dynamic>? jsonInfos) {
     if (_gotInfos == true) {
-      if (jsonInfos != null &&
-          jsonInfos['name'] != null &&
-          jsonInfos['area_of_installation'] != null &&
-          jsonInfos['num_of_sensors'] != null && jsonInfos['num_of_binary_sensors'] != null) {
+      if (jsonInfos != null && jsonInfos['mac_address'] != null && jsonInfos['unique_id'] != null && jsonInfos['num_of_sensors'] != null && jsonInfos['num_of_binary_sensors'] != null) {
         return true;
       } else {
         return false;

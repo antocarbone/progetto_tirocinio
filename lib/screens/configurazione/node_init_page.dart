@@ -47,13 +47,13 @@ class _NodeInitPageState extends State<NodeInitPage> {
                     ),
                     Form(
                       key: _formKey,
-                        child: MyTextField(hint: widget.deviceInfos['name'], controller: _nodeNameController, onlyNumbers: false)
+                        child: MyTextField(hint: widget.nodeData['name'], controller: _nodeNameController, onlyNumbers: false)
                     ),
                     ElevatedButton(
                       onPressed: () {
                         if(_formKey.currentState!.validate()) {
                           Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: widget.nodeData, deviceInfos: widget.deviceInfos,  nodeName: _nodeNameController.text == '' ? widget.deviceInfos['name'] : _nodeNameController.text, nodeArea: widget.nodeArea)),
+                              MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: widget.nodeData, deviceInfos: widget.deviceInfos,  nodeName: _nodeNameController.text == '' ? widget.nodeData['name'] : _nodeNameController.text, nodeArea: widget.nodeArea)),
                                   (Route<dynamic> route) => false);
                         }
                       },

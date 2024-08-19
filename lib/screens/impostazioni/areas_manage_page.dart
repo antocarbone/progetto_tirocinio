@@ -19,12 +19,10 @@ class _AreasManagePageState extends State<AreasManagePage> {
   List<Area> aree = [];
   late EncryptedSharedPreferences _prefs;
   String? _token;
-  String? _userType;
 
   void initPreferences() async {
     EncryptedSharedPreferences tmp;
     String? tmpToken = '';
-    String? tmpType = '';
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
@@ -43,11 +41,9 @@ class _AreasManagePageState extends State<AreasManagePage> {
     });
 
     tmpToken = _prefs.getString('token');
-    tmpType = _prefs.getString('tipo');
 
     setState(() {
       _token = tmpToken!;
-      _userType = tmpType!;
     });
 
     initAreas();

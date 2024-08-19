@@ -16,6 +16,18 @@ DateFormat historyDateFormatter = DateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'");
 /// ******************************************************************************
 /// GESTIONE ROTTE GENERICHE DI CONFIGURAZIONE
 
+Future<Map<String, dynamic>> getBrokerInfo(String token) async {
+  final response = await requestHelper.getRequest('/broker_info', token);
+
+  if (response.statusCode == 200) {
+    Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+    return jsonResponse;
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
 Future<String> checkBaseUrl() async {
   final response = await requestHelper.getRequest('/api_info');
 
@@ -558,6 +570,36 @@ class Nodo {
         status: status);
   }
 }
+
+Future<String> addNode(Map<String, dynamic> data, String token) async {
+  final response = await requestHelper.postRequest('/nodes/new', data, token);
+
+  if (response.statusCode == 201) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+
+Future<String> deleteNode(String id, String token) async {
+  final response = await requestHelper.deleteRequest('/nodes/', {'id':id}, token);
+
+  if (response.statusCode == 200) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
 
 /*
   METODO PER OTTENERE TUTTI I NODI DELL'AREA

@@ -28,7 +28,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
 
   final _flutterEspBleProvPlugin = FlutterEspBleProv();
 
-  Future<String?> getDeviceInfos(String name, String pop, int index, int operation) async {
+  Future<Map<String, dynamic>?> getDeviceInfos(String name, String pop, int index, int operation) async {
     String? res;
     try {
       res = await _flutterEspBleProvPlugin.sendCustomData(
@@ -36,7 +36,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
       if (res != null) {
         Map<String, dynamic> resJson = jsonDecode(res);
         if (resJson['status'] == 'success' && _checkJsonDeviceInfo(resJson, operation == 1 ? 'sensor' : 'binary_sensor')) {
-          return resJson['name'];
+          return resJson;
         } else {
           return null;
         }
@@ -50,24 +50,24 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
 
   void initSensors() async {
     for(int i = 0; i < widget.deviceInfos['num_of_sensors']; i++) {
-      String? defaultName = await getDeviceInfos(widget.nodeData['name'], widget.nodeData['pop'], i, 1);
-      if (defaultName != null) {
+      Map<String, dynamic>? sensorsInfo = await getDeviceInfos(widget.nodeData['name'], widget.nodeData['pop'], i, 1);
+      if (sensorsInfo != null) {
         setState(() {
-          sensors.add({'name': defaultName});
+          sensors.add({'name': sensorsInfo['topic_suffix'], 'topic_suffix': sensorsInfo['topic_suffix'], 'type_of_measurement': sensorsInfo['type_of_measurement']});
         });
       } else {
-        Utils.showSnackBar(context, 'ERRORE', 'si è verificaato un problema nei dati dei sensori', true);
+        Utils.showSnackBar(context, 'ERRORE', 'si è verificato un problema nei dati dei sensori', true);
       }
     }
 
     for(int i = 0; i < widget.deviceInfos['num_of_binary_sensors']; i++) {
-      String? defaultName = await getDeviceInfos(widget.nodeData['name'], widget.nodeData['pop'], i, 2);
-      if (defaultName != null) {
+      Map<String, dynamic>? binarySensorsInfo = await getDeviceInfos(widget.nodeData['name'], widget.nodeData['pop'], i, 2);
+      if (binarySensorsInfo != null) {
         setState(() {
-          binarySensors.add({'name': defaultName});
+          binarySensors.add({'name': binarySensorsInfo['topic_suffix'], 'topic_suffix': binarySensorsInfo['topic_suffix'], 'device_class': binarySensorsInfo['device_class']});
         });
       } else {
-        Utils.showSnackBar(context, 'ERRORE', 'si è verificaato un problema nei dati sei sensori binari', true);
+        Utils.showSnackBar(context, 'ERRORE', 'si è verificato un problema nei dati sei sensori binari', true);
       }
     }
   }
@@ -157,7 +157,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                             }
                           }
                           Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (context) => CommissioningPage(nodeData: widget.nodeData, nodeArea: widget.nodeArea, nodeName: widget.nodeName, sensors: sensors, binarySensors: binarySensors)),
+                              MaterialPageRoute(builder: (context) => CommissioningPage(nodeData: widget.nodeData, uniqueDeviceId: widget.deviceInfos['unique_id'], nodeArea: widget.nodeArea, nodeName: widget.nodeName, sensors: sensors, binarySensors: binarySensors)),
                                   (Route<dynamic> route) => false);
                       },
                       child: const Text('Continua'),
@@ -178,21 +178,22 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
     for(TextEditingController controller in sensorsControllers) {
       controller.dispose();
     }
+    for(TextEditingController controller in binarySensorsControllers) {
+      controller.dispose();
+    }
   }
 
   bool _checkJsonDeviceInfo(Map<String, dynamic>? jsonInfos, String type) {
     if (jsonInfos != null) {
       if(type == 'sensor'){
-        if (jsonInfos['name'] != null &&
-            jsonInfos['topic_suffix'] != null &&
+        if (jsonInfos['topic_suffix'] != null &&
             jsonInfos['type_of_measurement'] != null) {
           return true;
         } else {
           return false;
         }
       } else if(type=='binary_sensor') {
-        if (jsonInfos['name'] != null &&
-            jsonInfos['topic_suffix'] != null &&
+        if (jsonInfos['topic_suffix'] != null &&
             jsonInfos['device_class'] != null) {
           return true;
         } else {

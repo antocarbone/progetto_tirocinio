@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
+import 'package:encrypt_shared_preferences/provider.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_esp_ble_prov/flutter_esp_ble_prov.dart';
@@ -9,11 +13,12 @@ import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 
 class CommissioningPage extends StatefulWidget {
   final Map<String, dynamic> nodeData;
+  final String uniqueDeviceId;
   final String nodeArea;
   final String nodeName;
   final List<Map<String, dynamic>> sensors;
   final List<Map<String, dynamic>> binarySensors;
-  const CommissioningPage({super.key, required this.nodeData, required this.nodeArea, required this.nodeName, required this.sensors, required this.binarySensors});
+  const CommissioningPage({super.key, required this.nodeData, required this.uniqueDeviceId, required this.nodeArea, required this.nodeName, required this.sensors, required this.binarySensors});
 
   @override
   State<CommissioningPage> createState() => _CommissioningPageState();
@@ -31,64 +36,36 @@ class _CommissioningPageState extends State<CommissioningPage> {
 
   final _passwordController = TextEditingController();
 
-  bool? _newNodeInfoSent;
   bool? _wifiScanned;
 
-  Future<bool> sendNewNodeInfos() async {
-    String? res;
+  late EncryptedSharedPreferences _prefs;
+  String? _token;
+
+  void initPreferences() async {
+    EncryptedSharedPreferences tmp;
+    String? tmpToken = '';
     try {
-      Map<String, dynamic> data = {'index' : -1, 'operation' : 0, 'name': widget.nodeName, 'area_of_installation' : widget.nodeArea};
-      res = await _flutterEspBleProvPlugin.sendCustomData('set-device-info', json.encode(data), widget.nodeData['name'], widget.nodeData['pop']);
-      if (res != null) {
-        Map<String, dynamic> resJson = json.decode(res);
-        if (resJson['status'] == 'success') {
-          for(int i = 0; i < widget.sensors.length; i++) {
-            Map<String, dynamic> data = {'index' : i, 'operation' : 1, 'name' : widget.sensors[i]['name']};
-            res = await _flutterEspBleProvPlugin.sendCustomData('set-device-info', json.encode(data), widget.nodeData['name'], widget.nodeData['pop']);
-            if (res != null) {
-              resJson = json.decode(res);
-              if (resJson['status'] != 'success') {
-                Utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
-                setState(() {
-                  _newNodeInfoSent = false;
-                });
-                return false;
-              }
-            }
-          }
-          for(int i = 0; i < widget.binarySensors.length; i++) {
-            Map<String, dynamic> data = {'index' : i, 'operation' : 2, 'name' : widget.binarySensors[i]['name']};
-            res = await _flutterEspBleProvPlugin.sendCustomData('set-device-info', json.encode(data), widget.nodeData['name'], widget.nodeData['pop']);
-            if (res != null) {
-              resJson = json.decode(res);
-              if (resJson['status'] != 'success') {
-                Utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
-                setState(() {
-                  _newNodeInfoSent = false;
-                });
-                return false;
-              }
-            }
-          }
-          setState(() {
-            _newNodeInfoSent = true;
-          });
-          return true;
-        } else {
-          Utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
-          setState(() {
-            _newNodeInfoSent = false;
-          });
-          return false;
-        }
-      }
-    } catch (e) {
-      Utils.showSnackBar(context, 'Errore', 'Invio nuova configurazione fallito!', true);
+      await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
+      tmp = EncryptedSharedPreferences.getInstance();
+
+    } on Exception catch (e) {
+      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+      return;
     }
+
     setState(() {
-      _newNodeInfoSent = false;
+      _prefs = tmp;
     });
-    return false;
+
+    tmpToken = _prefs.getString('token');
+
+    setState(() {
+      _token = tmpToken!;
+    });
   }
 
   Future<bool> scanWifiNetworks() async {
@@ -121,6 +98,12 @@ class _CommissioningPageState extends State<CommissioningPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    initPreferences();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -137,26 +120,13 @@ class _CommissioningPageState extends State<CommissioningPage> {
           padding: EdgeInsets.all(defaultPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              buildStatusIndicator(
-                status: _newNodeInfoSent,
-                inProgressMessage: 'Invio le nuove info al nodo...',
-                successMessage: 'Info inviate!',
-                failureMessage: 'Invio fallito!',
-                futureFunction: sendNewNodeInfos,
-              ),
-              if(_newNodeInfoSent == true)... [buildStatusIndicator(
+            children: [buildStatusIndicator(
                 status: _wifiScanned,
                 inProgressMessage: 'Scansiono le reti wifi...',
                 successMessage: 'Reti trovate!',
                 failureMessage: 'Scansione delle reti wifi fallita!',
                 futureFunction: scanWifiNetworks,
-              )] else ... [
-                const RowStatusIndicator(
-                  indicator: Material(child: Icon(Icons.circle_outlined)),
-                  info: 'Scansione delle reti wifi',
-                )
-              ],
+              ),
               if (_wifiScanned == true) ... [
                   Expanded(
                   child: Container(
@@ -206,6 +176,21 @@ class _CommissioningPageState extends State<CommissioningPage> {
                                           selectedSsid: selectedSsid,
                                           passwordController: _passwordController,
                                           provisionWifi: provisionWifi,
+                                          onComplete: () async {
+                                            try {
+                                              Map<String, dynamic> data = {'id' : widget.uniqueDeviceId, 'name': widget.nodeName, 'area_of_installation' : widget.nodeArea, 'sensors' : widget.sensors, 'binary_sensors' : widget.binarySensors};
+                                              String res = await addNode(data, _token!);
+                                              Utils.showSnackBar(context, 'NODO AGGIUNTO', res, false);
+                                            } on HttpException catch (e) {
+                                              await _prefs.clear();
+                                              Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                                              Navigator.of(context).pushAndRemoveUntil(
+                                                  MaterialPageRoute(builder: (context) => const HomePage()),
+                                                      (Route<dynamic> route) => false);
+                                            } on Exception catch (e) {
+                                              Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                            }
+                                          },
                                         );
                                       },
                                     );
@@ -297,12 +282,14 @@ class WifiPasswordDialog extends StatefulWidget {
   final String selectedSsid;
   final TextEditingController passwordController;
   final Future<bool?> Function() provisionWifi;
+  final VoidCallback onComplete;
 
   const WifiPasswordDialog({
     super.key,
     required this.selectedSsid,
     required this.passwordController,
     required this.provisionWifi,
+    required this.onComplete,
   });
 
   @override
@@ -376,12 +363,8 @@ class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
                         actions: [
                           Center(
                             child: ElevatedButton(
+                              onPressed: widget.onComplete,
                               child: const Text('Termina'),
-                              onPressed: () async {
-                                Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(builder: (context) => const HomePage()),
-                                        (Route<dynamic> route) => false);
-                              },
                             ),
                           ),
                         ],

@@ -1,4 +1,10 @@
+import 'dart:io';
+
+import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/configurazione/node_init_page.dart';
+import 'package:dashboard_tirocinio/utility/api_helper.dart';
+import 'package:dashboard_tirocinio/utility/utils.dart';
+import 'package:encrypt_shared_preferences/provider.dart';
 import 'package:flutter/material.dart';
 
 class AreaAssignPage extends StatefulWidget {
@@ -12,8 +18,62 @@ class AreaAssignPage extends StatefulWidget {
 }
 
 class _AreaAssignPageState extends State<AreaAssignPage> {
-  final List<String> items = ['uno', 'due', 'tre', 'quattro'];
+  List<Area> aree = [];
   String? selectedValue;
+  late EncryptedSharedPreferences _prefs;
+  String? _token;
+
+  void initPreferences() async {
+    EncryptedSharedPreferences tmp;
+    String? tmpToken = '';
+    try {
+      await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
+      tmp = EncryptedSharedPreferences.getInstance();
+
+    } on Exception catch (e) {
+      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+      return;
+    }
+
+    setState(() {
+      _prefs = tmp;
+    });
+
+    tmpToken = _prefs.getString('token');
+
+    setState(() {
+      _token = tmpToken!;
+    });
+
+    initAreas();
+  }
+
+  void initAreas() async {
+    try {
+      List<Area> tmp = await getAllAreas(_token!);
+
+      setState(() {
+        aree = tmp;
+      });
+    } on HttpException catch (e) {
+      await _prefs.clear();
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPreferences();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +109,11 @@ class _AreaAssignPageState extends State<AreaAssignPage> {
                           selectedValue = selected;
                         });
                       },
-                      items: items.map(
+                      items: aree.map(
                             (item) {
                           return DropdownMenuItem(
-                            value: item,
-                            child: Text(item),
+                            value: item.nome,
+                            child: Text(item.nome),
                           );
                         },
                       ).toList(),
@@ -68,7 +128,7 @@ class _AreaAssignPageState extends State<AreaAssignPage> {
                             builder: (context) => NodeInitPage(
                               nodeData: widget.nodeData,
                               deviceInfos: widget.deviceInfos,
-                              nodeArea: selectedValue ?? widget.deviceInfos['area_of_installation'],
+                              nodeArea: selectedValue ?? aree[1].nome,
                             ),
                           ),
                               (Route<dynamic> route) => false,
