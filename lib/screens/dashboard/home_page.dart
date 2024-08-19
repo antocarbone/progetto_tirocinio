@@ -219,20 +219,21 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 300,
-                crossAxisSpacing: 5,
-                mainAxisSpacing: 5),
-            itemCount: 5,
-            itemBuilder: (context, index) {
-              return GridTile(
-                //child: MyBinarySensorInfo(sensorValue: true, sensorName: 'Porta Cucina', iconCode: 'door', trueString: 'aperta', falseString: 'chiusa')
-                child: MySensorInfo(sensor: Sensor(id: 1, nome: 'tmp', unitaMisura: '°C', lettura: 20.5, dataLettura: DateTime.now())),
-              );
-            },
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 300,
+                  crossAxisSpacing: 5,
+                  mainAxisSpacing: 5),
+              itemCount: 2,
+              itemBuilder: (context, index) {
+                return GridTile(
+                  child: MyHomePageInfo(title: index == 0 ? 'Totale Aree' : 'Totale Sensori', value: index == 0 ? 5 : 20),
+                );
+              },
+            ),
           ),
         ),
       ),

@@ -176,6 +176,12 @@ class _AreasManagePageState extends State<AreasManagePage> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _valueController.dispose();
+    super.dispose();
+  }
 }
 
 class AddAreaDialog extends StatefulWidget {

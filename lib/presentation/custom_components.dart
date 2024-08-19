@@ -140,6 +140,45 @@ class ChartData {
   final num? y;
 }
 
+class MyHomePageInfo extends StatelessWidget {
+  final String title;
+  final int value;
+  const MyHomePageInfo({super.key, required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.fitHeight,
+      child: Card(
+        elevation: 10,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              Divider(),
+              Text('$value',
+                style: const TextStyle(
+                  fontSize: 50,
+                ),
+                textAlign: TextAlign.center,
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // WIDGET CHE RAPPRESENTA UN SENSORE CON IL BAR CHART, IL VALORE LETTO E IL SUO NOME
 class MySensorInfo extends StatelessWidget {
   final Sensor sensor;
@@ -363,17 +402,26 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
               Padding(
                 padding: const EdgeInsets.only(top: 10),
                 child: Center(
-                  child: TextButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return NodeStatusHistory(nodeId: widget.nodo.id, token: widget.token);
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return NodeStatusHistory(nodeId: widget.nodo.id, token: widget.token);
+                            },
+                          );
                         },
-                      );
-                    },
-                    child: Text('stato: ${widget.nodo.status}',
-                        style: const TextStyle(color: Colors.black)),
+                        child: Text('stato: ${widget.nodo.status}',
+                            style: const TextStyle(color: Colors.black)),
+                      ),
+                      IconButton(
+                          onPressed: () {},
+                          icon: const Icon(Icons.delete_rounded)
+                      )
+                    ],
                   ),
                 ),
               )

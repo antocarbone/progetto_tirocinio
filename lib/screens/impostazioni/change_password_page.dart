@@ -173,4 +173,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
 }

@@ -141,4 +141,10 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
 }

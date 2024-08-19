@@ -254,4 +254,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _surnameController.dispose();
+    _firstNumberController.dispose();
+    _secondNumberController.dispose();
+    _mailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 }

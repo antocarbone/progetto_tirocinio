@@ -416,6 +416,12 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
       ),
     );
   }
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _valueController.dispose();
+    super.dispose();
+  }
 }
 
 class NotifyDialog extends StatefulWidget {

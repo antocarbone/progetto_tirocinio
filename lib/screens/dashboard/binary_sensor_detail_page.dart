@@ -28,7 +28,7 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
   final DateTime _defaultEnd =
       DateTime.now().subtract(const Duration(minutes: 10));
 
-  late BinarySensorReadingsHistory history;
+  BinarySensorReadingsHistory history = BinarySensorReadingsHistory(readings: []);
   bool _isExpanded = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _valueController = TextEditingController();
@@ -439,6 +439,13 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _valueController.dispose();
+    _nameController.dispose();
+    super.dispose();
   }
 }
 

@@ -31,7 +31,11 @@ class UrlInitImpl extends BaseUrlInit {
       future: initEnv(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator();
+          return const SizedBox(
+              width: 100,
+              height: 100,
+              child: CircularProgressIndicator()
+          );
         } else if (snapshot.hasError) {
           return const BaseApiUrlSetPage();
         } else {
