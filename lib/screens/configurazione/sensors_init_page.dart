@@ -53,7 +53,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
       Map<String, dynamic>? sensorsInfo = await getDeviceInfos(widget.nodeData['name'], widget.nodeData['pop'], i, 1);
       if (sensorsInfo != null) {
         setState(() {
-          sensors.add({'name': sensorsInfo['topic_suffix'], 'topic_suffix': sensorsInfo['topic_suffix'], 'type_of_measurement': sensorsInfo['type_of_measurement']});
+          sensors.add({'sens_name': sensorsInfo['topic_suffix'], 'topic': sensorsInfo['topic_suffix'], 'unit': sensorsInfo['type_of_measurement']});
         });
       } else {
         Utils.showSnackBar(context, 'ERRORE', 'si è verificato un problema nei dati dei sensori', true);
@@ -64,7 +64,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
       Map<String, dynamic>? binarySensorsInfo = await getDeviceInfos(widget.nodeData['name'], widget.nodeData['pop'], i, 2);
       if (binarySensorsInfo != null) {
         setState(() {
-          binarySensors.add({'name': binarySensorsInfo['topic_suffix'], 'topic_suffix': binarySensorsInfo['topic_suffix'], 'device_class': binarySensorsInfo['device_class']});
+          binarySensors.add({'sens_name': binarySensorsInfo['topic_suffix'], 'topic': binarySensorsInfo['topic_suffix'], 'device_class': binarySensorsInfo['device_class']});
         });
       } else {
         Utils.showSnackBar(context, 'ERRORE', 'si è verificato un problema nei dati sei sensori binari', true);
@@ -121,7 +121,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                           ListView.builder(
                             itemCount: sensors.length,
                             itemBuilder: (context, i) {
-                              return MyTextField(hint: sensors[i]['name'], controller: sensorsControllers[i], onlyNumbers: false);
+                              return MyTextField(hint: sensors[i]['sens_name'], controller: sensorsControllers[i], onlyNumbers: false);
                             },
                             shrinkWrap: true,
                           ),
@@ -133,7 +133,7 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                           ListView.builder(
                             itemCount: binarySensors.length,
                             itemBuilder: (context, i) {
-                              return MyTextField(hint: binarySensors[i]['name'], controller: binarySensorsControllers[i], onlyNumbers: false);
+                              return MyTextField(hint: binarySensors[i]['sens_name'], controller: binarySensorsControllers[i], onlyNumbers: false);
                             },
                             shrinkWrap: true,
                           ),

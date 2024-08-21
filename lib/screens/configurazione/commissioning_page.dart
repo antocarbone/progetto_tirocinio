@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:io';
-
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
@@ -41,7 +39,7 @@ class _CommissioningPageState extends State<CommissioningPage> {
   late EncryptedSharedPreferences _prefs;
   String? _token;
 
-  void initPreferences() async {
+  Future<void> initPreferences() async {
     EncryptedSharedPreferences tmp;
     String? tmpToken = '';
     try {
@@ -95,12 +93,6 @@ class _CommissioningPageState extends State<CommissioningPage> {
     } catch (e) {
       return false;
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    initPreferences();
   }
 
   @override
@@ -177,18 +169,38 @@ class _CommissioningPageState extends State<CommissioningPage> {
                                           passwordController: _passwordController,
                                           provisionWifi: provisionWifi,
                                           onComplete: () async {
+                                            await initPreferences();
+                                            late String res;
                                             try {
-                                              Map<String, dynamic> data = {'id' : widget.uniqueDeviceId, 'name': widget.nodeName, 'area_of_installation' : widget.nodeArea, 'sensors' : widget.sensors, 'binary_sensors' : widget.binarySensors};
-                                              String res = await addNode(data, _token!);
-                                              Utils.showSnackBar(context, 'NODO AGGIUNTO', res, false);
+                                              Map<String, dynamic> data = {'id_node' : widget.uniqueDeviceId, 'node_name': widget.nodeName, 'area_name' : widget.nodeArea, 'sensors' : widget.sensors, 'binary_sensors' : widget.binarySensors};
+                                              res = await addNode(data, _token!);
+                                              if (mounted) {
+                                                Utils.showSnackBar(
+                                                    super.context,
+                                                    'NODO AGGIUNTO',
+                                                    res,
+                                                    false);
+                                              }
                                             } on HttpException catch (e) {
                                               await _prefs.clear();
-                                              Utils.showSnackBar(context, 'ERRORE', e.message, true);
                                               Navigator.of(context).pushAndRemoveUntil(
-                                                  MaterialPageRoute(builder: (context) => const HomePage()),
+                                                  MaterialPageRoute(builder: (context) => const LoginPage()),
                                                       (Route<dynamic> route) => false);
+                                              if (mounted) {
+                                                Utils.showSnackBar(
+                                                    super.context,
+                                                    'ERRORE',
+                                                    e.message,
+                                                    true);
+                                              }
                                             } on Exception catch (e) {
-                                              Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                              if (mounted) {
+                                                Utils.showSnackBar(
+                                                    super.context,
+                                                    'ERRORE',
+                                                    e.toString(),
+                                                    true);
+                                              }
                                             }
                                           },
                                         );
@@ -363,7 +375,13 @@ class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
                         actions: [
                           Center(
                             child: ElevatedButton(
-                              onPressed: widget.onComplete,
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                widget.onComplete();
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(builder: (context) => const HomePage()),
+                                        (Route<dynamic> route) => false);
+                              },
                               child: const Text('Termina'),
                             ),
                           ),

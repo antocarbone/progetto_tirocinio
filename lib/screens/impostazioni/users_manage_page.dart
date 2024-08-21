@@ -20,12 +20,11 @@ class _UsersManagePageState extends State<UsersManagePage> {
   List<User> utenti = [];
   late EncryptedSharedPreferences _prefs;
   String? _token;
-  String? _userType;
+  bool isUsersInit = false;
 
   void initPreferences() async {
     EncryptedSharedPreferences tmp;
     String? tmpToken = '';
-    String? tmpType = '';
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
@@ -44,11 +43,9 @@ class _UsersManagePageState extends State<UsersManagePage> {
     });
 
     tmpToken = _prefs.getString('token');
-    tmpType = _prefs.getString('tipo');
 
     setState(() {
       _token = tmpToken!;
-      _userType = tmpType!;
     });
     initUtenti();
   }
@@ -58,6 +55,7 @@ class _UsersManagePageState extends State<UsersManagePage> {
       List<User> tmpUtenti = await getAllUsers(_token!);
       setState(() {
         utenti = tmpUtenti;
+        isUsersInit = true;
       });
     } on HttpException catch (e) {
       await _prefs.clear();
@@ -105,7 +103,9 @@ class _UsersManagePageState extends State<UsersManagePage> {
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          if (utenti.isNotEmpty) ... [Padding(
+                          if (!isUsersInit) ... [
+                            const CircularProgressIndicator()
+                          ] else if (utenti.isNotEmpty) ... [Padding(
                             padding: const EdgeInsets.symmetric(vertical: 5),
                             child: ListView.builder(
                               shrinkWrap: true,

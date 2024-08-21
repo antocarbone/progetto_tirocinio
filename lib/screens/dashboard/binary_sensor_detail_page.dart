@@ -83,8 +83,7 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
           if (_startDateTime != null) {
             if (pickedDateTime.isAfter(_startDateTime!)) {
               BinarySensorReadingsHistory tmpHistory =
-                  await getBinarySensorReadings(widget.sensor.id,
-                      _startDateTime!, pickedDateTime, _token!);
+                  await getBinarySensorReadings(widget.sensor.id, _startDateTime!, pickedDateTime, _token!);
               setState(() {
                 _endDateTime = pickedDateTime;
                 history = tmpHistory;
@@ -152,13 +151,12 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
       Navigator.of(context).pop();
     }
-    //await initNotifiche();
+    await initNotifiche();
   }
 
-  /*
   Future<void> initNotifiche() async {
     try {
-      List<NotificaSensoreBinario> tmpNotifiche = await getNotify();
+      List<NotificaSensoreBinario> tmpNotifiche = await getAllUserBinaryNotify(widget.sensor.id.toString(), _token!);
       setState(() {
         notifiche = tmpNotifiche;
       });
@@ -167,7 +165,6 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
       Navigator.of(context).pop();
     }
   }
-  */
 
   @override
   void initState() {
@@ -216,7 +213,8 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                           child: FittedBox(
                               child: IconButton(
                                   onPressed: () async {
-                                    await _prefs.clear();
+                                    await _prefs.remove('token');
+                                    await _prefs.remove('tipo');
                                     Navigator.of(context).pushAndRemoveUntil(
                                         MaterialPageRoute(
                                             builder: (context) =>
@@ -241,16 +239,15 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: SingleChildScrollView(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
                   maxWidth: 800,
                 ),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     MyGenericListElement(
@@ -258,7 +255,7 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                           Icon(MdiIcons.fromString(widget.sensor.codiceIcona)),
                       title: widget.sensor.nome,
                       subtitle:
-                          '${widget.sensor.valore ? widget.sensor.stringaTrue : widget.sensor.stringaFalse} - ${dateTimeFormatter.format(widget.sensor.dataLettura)}',
+                          '${widget.sensor.valore == null ? 'non disponibile' : widget.sensor.valore!? widget.sensor.stringaTrue : widget.sensor.stringaFalse} ${widget.sensor.dataLettura == null ? '' : '- ${dateTimeFormatter.format(widget.sensor.dataLettura!)}'}'
                     ),
                     ConstrainedBox(
                       constraints: const BoxConstraints(
@@ -273,29 +270,31 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                             children: [
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 20),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          _selectDateTime(context, true),
-                                      child: Text(
-                                        _startDateTime == null
-                                            ? 'Da: ${dateTimeFormatter.format(_defaultStart.toLocal())}'
-                                            : 'Da: ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+                                child: FittedBox(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            _selectDateTime(context, true),
+                                        child: Text(
+                                          _startDateTime == null
+                                              ? 'Da: ${dateTimeFormatter.format(_defaultStart.toLocal())}'
+                                              : 'Da: ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+                                        ),
                                       ),
-                                    ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          _selectDateTime(context, false),
-                                      child: Text(
-                                        _endDateTime == null
-                                            ? 'A: ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
-                                            : 'A: ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                                      TextButton(
+                                        onPressed: () =>
+                                            _selectDateTime(context, false),
+                                        child: Text(
+                                          _endDateTime == null
+                                              ? 'A: ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
+                                              : 'A: ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                               if (history.readings.isNotEmpty) ... [Expanded(
@@ -315,7 +314,7 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                                   },
                                 ),
                               )] else ... [
-                                const Center(child: Text('Non sono presenti letture nel periodo specificato'))
+                                const Center(child: Text('Non sono presenti letture nel periodo specificato', textAlign: TextAlign.center))
                               ],
                             ],
                           ),
@@ -334,13 +333,14 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 5),
                         child: ListView.builder(
+                          shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: notifiche.length,
                           itemBuilder: (context, index) {
                             return MyGenericListElement(
                               leading: const Icon(Icons.notifications),
-                              title:
-                                  'Avvisami quando la lettura è ${notifiche[index].benchmark}',
+                              title: notifiche[index].nome,
+                              subtitle: 'Avvisami quando la lettura è ${notifiche[index].benchmark ? widget.sensor.stringaTrue : widget.sensor.stringaFalse}',
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -354,7 +354,7 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                                                 String res = await deleteBinaryNotify(notifiche[index].id, _token!);
                                                 Utils.showSnackBar(context, 'NOTIFICA ELIMINATA', res, false);
                                                 Navigator.of(context).pop();
-                                                //initNotifiche();
+                                                initNotifiche();
                                               } on HttpException catch (e) {
                                                 await _prefs.clear();
                                                 Utils.showSnackBar(context, 'ERRORE', e.message, true);
@@ -378,7 +378,7 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                                       try {
                                         String res = await updateNotify(notifiche[index].id, _token!);
                                         Utils.showSnackBar(context, 'STATO NOTIFICA AGGIORNATO', res, false);
-                                        //initNotifiche();
+                                        initNotifiche();
                                       } on HttpException catch (e) {
                                         await _prefs.clear();
                                         Utils.showSnackBar(context, 'ERRORE', e.message, true);
@@ -396,39 +396,42 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                             );
                           },
                         ),
-                      )
-                    ],
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return NotifyDialog(
-                                nameController: _nameController,
-                                valueController: _valueController,
-                                stringaTrue: widget.sensor.stringaTrue,
-                                stringaFalse: widget.sensor.stringaFalse,
-                                addNotifica: (String nome, bool benchmark) async {
-                                  try {
-                                    String res = await addBinaryNotify(nome, benchmark, _token!);
-                                    Utils.showSnackBar(super.context, 'NOTIFICA AGGIUNTA', res, false);
-                                  } on HttpException catch (e) {
-                                    await _prefs.clear();
-                                    Utils.showSnackBar(super.context, 'ERRORE', e.message, true);
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                            builder: (context) => const LoginPage()),
-                                            (Route<dynamic> route) => false);
-                                  } on Exception catch (e) {
-                                    Utils.showSnackBar(super.context, 'ERRORE', e.toString(), true);
-                                  }
-                                },
-                              );
-                            },
-                          );
-                        },
-                        child: const Text('Aggiungi una notifica'),
+                      )],
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20),
+                      child: Center(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return NotifyDialog(
+                                  nameController: _nameController,
+                                  valueController: _valueController,
+                                  stringaTrue: widget.sensor.stringaTrue,
+                                  stringaFalse: widget.sensor.stringaFalse,
+                                  addNotifica: (String nome, bool benchmark) async {
+                                    try {
+                                      String res = await addBinaryNotify(widget.sensor.id.toString(), nome, benchmark, _token!);
+                                      Utils.showSnackBar(super.context, 'NOTIFICA AGGIUNTA', res, false);
+                                      initNotifiche();
+                                    } on HttpException catch (e) {
+                                      await _prefs.clear();
+                                      Utils.showSnackBar(super.context, 'ERRORE', e.message, true);
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                          MaterialPageRoute(
+                                              builder: (context) => const LoginPage()),
+                                              (Route<dynamic> route) => false);
+                                    } on Exception catch (e) {
+                                      Utils.showSnackBar(super.context, 'ERRORE', e.toString(), true);
+                                    }
+                                  },
+                                );
+                              },
+                            );
+                          },
+                          child: const Text('Aggiungi una notifica'),
+                        ),
                       ),
                     ),
                   ],
@@ -491,41 +494,37 @@ class _NotifyDialogState extends State<NotifyDialog> {
                         return null;
                       },
                       hint: 'Nome',
-                      controller: widget.valueController,
+                      controller: widget.nameController,
                       onlyNumbers: false,
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Flexible(flex: 1, child: Text('Invia quando:')),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            validator: (selected) {
-                              if (selected == null) {
-                                return 'Seleziona un trigger!';
-                              }
-                              return null;
-                            },
-                            value: selectedValue,
-                            onChanged: (selected) {
-                              setState(() {
-                                selectedValue = selected;
-                              });
-                            },
-                            items: items.map(
-                              (item) {
-                                return DropdownMenuItem(
-                                  value: item,
-                                  child: Text(item == 'true' ? widget.stringaTrue : widget.stringaFalse),
-                                );
-                              },
-                            ).toList(),
-                            hint: const Text('Trigger'),
-                            icon: const Icon(Icons.arrow_drop_down),
-                            iconSize: 24,
-                          ),
-                        ),
-                      ],
+                    const Padding(
+                      padding: EdgeInsets.only(top: 10),
+                      child: Text('Invia quando:', textAlign: TextAlign.start),
+                    ),
+                    DropdownButtonFormField<String>(
+                      validator: (selected) {
+                        if (selected == null) {
+                          return 'Seleziona un trigger!';
+                        }
+                        return null;
+                      },
+                      value: selectedValue,
+                      onChanged: (selected) {
+                        setState(() {
+                          selectedValue = selected;
+                        });
+                      },
+                      items: items.map(
+                        (item) {
+                          return DropdownMenuItem(
+                            value: item,
+                            child: Text(item == 'true' ? widget.stringaTrue : widget.stringaFalse),
+                          );
+                        },
+                      ).toList(),
+                      hint: const Text('Trigger'),
+                      icon: const Icon(Icons.arrow_drop_down),
+                      iconSize: 24,
                     ),
                   ],
                 ),

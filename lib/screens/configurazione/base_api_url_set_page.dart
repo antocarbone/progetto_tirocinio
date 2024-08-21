@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
@@ -23,7 +21,6 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
       Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
@@ -72,7 +69,7 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Inserisci il base url dell\'api', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                      const FittedBox(child: Text('Inserisci il base url dell\'api', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold))),
                       Padding(
                         padding: const EdgeInsets.only(top: 30),
                         child: Form(
@@ -111,8 +108,7 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
                                   try {
                                     if (await _prefs.setString('url', _urlController.text)) {
                                       await checkBaseUrl();
-                                      Utils.showSnackBar(context,
-                                          'BASE URL IPOSTATO', 'Procedi al log-In', false);
+                                      Utils.showSnackBar(context, 'BASE URL IMPOSTATO', 'Procedi al log-In', false);
                                       Navigator.of(context).pushAndRemoveUntil(
                                           MaterialPageRoute(
                                               builder: (context) =>
@@ -122,8 +118,8 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
                                       Utils.showSnackBar(context, 'ERRORE', 'Riavvia l\'app e riprova!', true);
                                     }
                                   } on Exception catch (e) {
+                                    await _prefs.remove('url');
                                     Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
-                                    Navigator.of(context).pop();
                                   }
                                 }
                               },

@@ -23,6 +23,7 @@ class _NodeStatusHistoryState extends State<NodeStatusHistory> {
   final DateTime _defaultStart = DateTime.now().subtract(const Duration(days: 7));
   final DateTime _defaultEnd = DateTime.now().subtract(const Duration(minutes: 10));
   List<StatoNodo> history = [];
+  bool isHistoryInit = false;
 
   Future<void> _selectDateTime(BuildContext context, bool isStartDate) async {
     final DateTime? pickedDate = await showDatePicker(
@@ -92,6 +93,7 @@ class _NodeStatusHistoryState extends State<NodeStatusHistory> {
       List<StatoNodo> tmpHistory = await getNodeStatusHistory(widget.nodeId, start, end, widget.token);
       setState(() {
         history = tmpHistory;
+        isHistoryInit = true;
       });
     } on HttpException catch (e) {
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
@@ -138,7 +140,7 @@ class _NodeStatusHistoryState extends State<NodeStatusHistory> {
               ),
             ),
             Expanded(
-              child: ListView.builder(
+              child: !isHistoryInit ? const CircularProgressIndicator() : history.isNotEmpty ? ListView.builder(
                 itemCount: history.length,
                 itemBuilder: (context, index) {
                   return MyGenericListElement(
@@ -147,7 +149,7 @@ class _NodeStatusHistoryState extends State<NodeStatusHistory> {
                     subtitle: 'Da ${dateTimeFormatter.format(history[index].start)}\n${history[index].end == null ? 'In corso' : 'A ${dateTimeFormatter.format(history[index].end!)}'}',
                   );
                 },
-              ),
+              ) : const Text('Nessun informazione riguardante lo stato nel periodo selezionato', textAlign: TextAlign.center),
             ),
           ],
         ),

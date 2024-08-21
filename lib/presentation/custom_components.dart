@@ -44,7 +44,7 @@ class MyGenericListElement extends StatelessWidget {
       child: ListTile(
         leading: leading,
         title: Center(child: FittedBox(child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
-        subtitle: subtitle == null ? null : Center(child: Text(subtitle!, style: const TextStyle(fontSize: 15))),
+        subtitle: subtitle == null ? null : Center(child: Text(subtitle!, style: const TextStyle(fontSize: 15), textAlign: TextAlign.center)),
         trailing: trailing,
       ),
     );
@@ -211,18 +211,33 @@ class MySensorInfo extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     RadiusChart(chartData: [ChartData('', sensor.lettura)]),
-                    Text(
+                    sensor.lettura != null ? Text(
                       '${sensor.lettura}',
                       style: const TextStyle(
                         fontSize: 50,
                         fontWeight: FontWeight.bold,
                       ),
+                    ) :
+                    const Text(
+                      'Non\nDisponibile',
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center
                     ),
                   ],
                 ),
-                Text(
+                sensor.lettura != null ? Text(
                   '${sensor.lettura} ${sensor.unitaMisura}',
                   style: const TextStyle(
+                    fontSize: 30,
+                  ),
+                  textAlign: TextAlign.center,
+                ) :
+                const Text(
+                  'Non Disponibile',
+                  style: TextStyle(
                     fontSize: 30,
                   ),
                   textAlign: TextAlign.center,
@@ -279,7 +294,7 @@ class MyBinarySensorInfo extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 12),
                     child: FittedBox(
                       child: Text(
-                        sensor.valore ? sensor.stringaTrue : sensor.stringaFalse,
+                        sensor.valore == null ? 'non disponibile' : sensor.valore! ? sensor.stringaTrue : sensor.stringaFalse,
                         style: const TextStyle(
                           fontSize: 30,
                         ),

@@ -151,13 +151,12 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
       Navigator.of(context).pop();
     }
-    //await initNotifiche();
+    await initNotifiche();
   }
 
-  /*
   Future<void> initNotifiche() async {
     try {
-      List<FlSpot> tmpHistory = await getNotify();
+      List<NotificaSensore> tmpNotifiche = await getAllUserNotify(widget.sensor.id.toString(), _token!);
       setState(() {
         notifiche = tmpNotifiche;
       });
@@ -166,7 +165,6 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
       Navigator.of(context).pop();
     }
   }
-  */
 
   @override
   void initState() {
@@ -205,7 +203,8 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: FittedBox(child: IconButton(
                               onPressed: () async {
-                                await _prefs.clear();
+                                await _prefs.remove('token');
+                                await _prefs.remove('tipo');
                                 Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
                                         builder: (context) => const LoginPage()),
@@ -247,16 +246,26 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                           alignment: Alignment.center,
                           children: [
                             RadiusChart(chartData: [ChartData('', widget.sensor.lettura)]),
-                            Text(
+                            widget.sensor.lettura != null ? Text(
                               '${widget.sensor.lettura}',
                               style: const TextStyle(
-                                  fontSize: 50, fontWeight: FontWeight.bold),
+                                fontSize: 50,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ) :
+                            const Text(
+                                'Non\nDisponibile',
+                                style: TextStyle(
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center
                             ),
                           ],
                         ),
                       ),
                       title: widget.sensor.nome,
-                      subtitle: '${widget.sensor.lettura} ${widget.sensor.unitaMisura}',
+                      subtitle: widget.sensor.lettura == null ? 'Non Disponibile' : '${widget.sensor.lettura} ${widget.sensor.unitaMisura}',
                     ),
                     Card(
                       elevation: 10,
@@ -272,30 +281,32 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                                   end: _endDateTime == null ? _defaultEnd : _endDateTime!
                               ),
                             )] else ... [
-                              const Center(child: Text('Non sono presenti letture nel periodo specificato'))
+                              const Center(child: Text('Non sono presenti letture nel periodo specificato', textAlign: TextAlign.center))
                             ],
                             Padding(
                               padding: const EdgeInsets.only(top: 20),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  TextButton(
-                                    onPressed: () => _selectDateTime(context, true),
-                                    child: Text(
-                                      _startDateTime == null
-                                          ? 'Da ${dateTimeFormatter.format(_defaultStart.toLocal())}'
-                                          : 'Da ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+                              child: FittedBox(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () => _selectDateTime(context, true),
+                                      child: Text(
+                                        _startDateTime == null
+                                            ? 'Da ${dateTimeFormatter.format(_defaultStart.toLocal())}'
+                                            : 'Da ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+                                      ),
                                     ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => _selectDateTime(context, false),
-                                    child: Text(
-                                      _endDateTime == null
-                                          ? 'A ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
-                                          : 'A ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                                    TextButton(
+                                      onPressed: () => _selectDateTime(context, false),
+                                      child: Text(
+                                        _endDateTime == null
+                                            ? 'A ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
+                                            : 'A ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -318,8 +329,8 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                         itemBuilder: (context, index) {
                           return MyGenericListElement(
                             leading: const Icon(Icons.notifications),
-                            title:
-                            'Avvisami quando la lettura è ${notifiche[index].trigger} ${notifiche[index].benchmark}',
+                            title: notifiche[index].nome,
+                            subtitle: 'Avvisami quando ${notifiche[index].trigger} ${notifiche[index].benchmark}',
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -333,7 +344,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                                               String res = await deleteNotify(notifiche[index].id, _token!);
                                               Utils.showSnackBar(context, 'NOTIFICA ELIMINATA', res, false);
                                               Navigator.of(context).pop();
-                                              //initNotifiche();
+                                              initNotifiche();
                                             } on HttpException catch (e) {
                                               await _prefs.clear();
                                               Utils.showSnackBar(context, 'ERRORE', e.message, true);
@@ -357,7 +368,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                                     try {
                                       String res = await updateNotify(notifiche[index].id, _token!);
                                       Utils.showSnackBar(context, 'STATO NOTIFICA AGGIORNATO', res, false);
-                                      //initNotifiche();
+                                      initNotifiche();
                                     } on HttpException catch (e) {
                                       await _prefs.clear();
                                       Utils.showSnackBar(context, 'ERRORE', e.message, true);
@@ -376,35 +387,39 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                         },
                       ),
                     ),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return NotifyDialog(
-                                nameController: _nameController,
-                                valueController: _valueController,
-                                addNotifica: (String nome, String trigger, double valore) async {
-                                  try {
-                                    String res = await addNotify(nome, trigger, valore, _token!);
-                                    Utils.showSnackBar(super.context, 'NOTIFICA AGGIUNTA', res, false);
-                                  } on HttpException catch (e) {
-                                    await _prefs.clear();
-                                    Utils.showSnackBar(super.context, 'ERRORE', e.message, true);
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                            builder: (context) => const LoginPage()),
-                                            (Route<dynamic> route) => false);
-                                  } on Exception catch (e) {
-                                    Utils.showSnackBar(super.context, 'ERRORE', e.toString(), true);
-                                  }
-                                },
-                              );
-                            },
-                          );
-                        },
-                        child: const Text('Aggiungi una notifica'),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20),
+                      child: Center(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return NotifyDialog(
+                                  nameController: _nameController,
+                                  valueController: _valueController,
+                                  addNotifica: (String nome, String trigger, double valore) async {
+                                    try {
+                                      String res = await addNotify(widget.sensor.id.toString(), nome, trigger, valore, _token!);
+                                      Utils.showSnackBar(super.context, 'NOTIFICA AGGIUNTA', res, false);
+                                      initNotifiche();
+                                    } on HttpException catch (e) {
+                                      await _prefs.clear();
+                                      Utils.showSnackBar(super.context, 'ERRORE', e.message, true);
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                          MaterialPageRoute(
+                                              builder: (context) => const LoginPage()),
+                                              (Route<dynamic> route) => false);
+                                    } on Exception catch (e) {
+                                      Utils.showSnackBar(super.context, 'ERRORE', e.toString(), true);
+                                    }
+                                  },
+                                );
+                              },
+                            );
+                          },
+                          child: const Text('Aggiungi una notifica'),
+                        ),
                       ),
                     ),
                   ],
@@ -442,8 +457,10 @@ class _NotifyDialogState extends State<NotifyDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Center(
-          child: Text('Imposta il tipo di notifica',
-              style: TextStyle(fontWeight: FontWeight.bold))),
+          child: FittedBox(
+            child: Text('Imposta il tipo di notifica',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          )),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 800),
         child: Column(
@@ -466,66 +483,72 @@ class _NotifyDialogState extends State<NotifyDialog> {
                       controller: widget.nameController,
                       onlyNumbers: false,
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Flexible(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Flexible(
+                              flex: 1,
+                              child: Text('Invia quando:')),
+                          Flexible(
                             flex: 1,
-                            child: Text('Invia quando:')),
-                        Flexible(
-                          flex: 1,
-                          child: DropdownButtonFormField<String>(
-                            validator: (selected) {
-                              if (selected == null) {
-                                return 'Seleziona un trigger!';
-                              }
-                              return null;
-                            },
-                            value: selectedValue,
-                            onChanged: (selected) {
-                              setState(() {
-                                selectedValue = selected;
-                              });
-                            },
-                            items: items.map(
-                                  (item) {
-                                return DropdownMenuItem(
-                                  value: item,
-                                  child: Text(item),
-                                );
+                            child: DropdownButtonFormField<String>(
+                              validator: (selected) {
+                                if (selected == null) {
+                                  return 'Seleziona un trigger!';
+                                }
+                                return null;
                               },
-                            ).toList(),
-                            hint: const Text('Trigger'),
-                            icon: const Icon(Icons.arrow_drop_down),
-                            iconSize: 24,
+                              value: selectedValue,
+                              onChanged: (selected) {
+                                setState(() {
+                                  selectedValue = selected;
+                                });
+                              },
+                              items: items.map(
+                                    (item) {
+                                  return DropdownMenuItem(
+                                    value: item,
+                                    child: Text(item),
+                                  );
+                                },
+                              ).toList(),
+                              hint: const Text('Trigger'),
+                              icon: const Icon(Icons.arrow_drop_down),
+                              iconSize: 24,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Flexible(
-                            flex: 1,
-                            child: Text('Del valore:')),
-                        Flexible(
-                          flex: 2,
-                          child: MyTextField(
-                            validator: (valore) {
-                              if (valore == null || valore.isEmpty) {
-                                return 'Inserisci un valore!';
-                              }
-                              if (double.tryParse(valore) == null) {
-                                return 'Inserisci un valore numerico!';
-                              }
-                              return null;
-                            },
-                            hint: 'Valore',
-                            controller: widget.valueController,
-                            onlyNumbers: true,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Flexible(
+                              flex: 1,
+                              child: Text('Del valore:')),
+                          Flexible(
+                            flex: 2,
+                            child: MyTextField(
+                              validator: (valore) {
+                                if (valore == null || valore.isEmpty) {
+                                  return 'Inserisci un valore!';
+                                }
+                                if (double.tryParse(valore) == null) {
+                                  return 'Inserisci un valore numerico!';
+                                }
+                                return null;
+                              },
+                              hint: 'Valore',
+                              controller: widget.valueController,
+                              onlyNumbers: true,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

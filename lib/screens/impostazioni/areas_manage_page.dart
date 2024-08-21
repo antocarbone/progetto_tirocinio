@@ -19,6 +19,7 @@ class _AreasManagePageState extends State<AreasManagePage> {
   List<Area> aree = [];
   late EncryptedSharedPreferences _prefs;
   String? _token;
+  bool isAreasInit = false;
 
   void initPreferences() async {
     EncryptedSharedPreferences tmp;
@@ -55,6 +56,7 @@ class _AreasManagePageState extends State<AreasManagePage> {
 
       setState(() {
         aree = tmp;
+        isAreasInit = true;
       });
     } on HttpException catch (e) {
       await _prefs.clear();
@@ -88,7 +90,9 @@ class _AreasManagePageState extends State<AreasManagePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  if(aree.isNotEmpty) ... [const Padding(
+                  if (!isAreasInit ) ... [
+                    const CircularProgressIndicator()
+                  ] else if(aree.isNotEmpty) ... [const Padding(
                     padding: EdgeInsets.symmetric(vertical: 10),
                     child: Center(
                         child: Text('Le tue aree',

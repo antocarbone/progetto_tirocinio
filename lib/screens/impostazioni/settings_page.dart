@@ -89,7 +89,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: FittedBox(child: IconButton(
                               onPressed: () async {
-                                await _prefs.clear();
+                                await _prefs.remove('token');
+                                await _prefs.remove('tipo');
                                 Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
                                         builder: (context) => const LoginPage()),

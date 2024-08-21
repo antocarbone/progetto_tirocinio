@@ -6,6 +6,7 @@ import 'package:dashboard_tirocinio/screens/configurazione/ble_connection_dialog
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'dart:convert';
 
 import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog.dart';
@@ -30,6 +31,7 @@ class _HomePageState extends State<HomePage> {
   String? _token;
   String? _userType;
   List<Area> userAreas = [];
+  List<dynamic> offlineNodes = [];
 
   void initPreferences() async {
     EncryptedSharedPreferences tmp;
@@ -48,17 +50,21 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    setState(() {
-      _prefs = tmp;
-    });
+    if (mounted) {
+      setState(() {
+        _prefs = tmp;
+      });
+    }
 
     tmpToken = _prefs.getString('token');
     tmpType = _prefs.getString('tipo');
 
-    setState(() {
-      _token = tmpToken!;
-      _userType = tmpType!;
-    });
+    if (mounted) {
+      setState(() {
+        _token = tmpToken!;
+        _userType = tmpType!;
+      });
+    }
     initUserAreas();
   }
 
@@ -66,9 +72,11 @@ class _HomePageState extends State<HomePage> {
     List<Area> tmp;
     try {
       tmp = await getAllUserAreas(_token!, null);
-      setState(() {
-        userAreas = tmp;
-      });
+      if (mounted) {
+        setState(() {
+          userAreas = tmp;
+        });
+      }
     } on HttpException catch (e) {
       await _prefs.clear();
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
@@ -76,6 +84,19 @@ class _HomePageState extends State<HomePage> {
           MaterialPageRoute(
               builder: (context) => const LoginPage()),
               (Route<dynamic> route) => false);
+    }
+    await initOfflineNodes();
+  }
+
+  Future<void> initOfflineNodes() async {
+    try {
+      List<dynamic> tmpOfflineNodes = await getAllUserOfflineNodes(_token!);
+      setState(() {
+        offlineNodes = tmpOfflineNodes;
+      });
+    } on HttpException catch (e) {
+      Utils.showSnackBar(context, 'ERRORE', e.message, true);
+      Navigator.of(context).pop();
     }
   }
 
@@ -116,7 +137,8 @@ class _HomePageState extends State<HomePage> {
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: FittedBox(child: IconButton(
                               onPressed: () async {
-                                await _prefs.clear();
+                                await _prefs.remove('token');
+                                await _prefs.remove('tipo');
                                 Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
                                         builder: (context) => const LoginPage()),
@@ -133,9 +155,11 @@ class _HomePageState extends State<HomePage> {
           Padding(
             padding: const EdgeInsets.all(5),
             child: MyUserButton(onPressed: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
+              if (mounted) {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              }
             }),
           )
         ],
@@ -219,20 +243,53 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: SafeArea(
-        child: Center(
+        child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 300,
-                  crossAxisSpacing: 5,
-                  mainAxisSpacing: 5),
-              itemCount: 2,
-              itemBuilder: (context, index) {
-                return GridTile(
-                  child: MyHomePageInfo(title: index == 0 ? 'Totale Aree' : 'Totale Sensori', value: index == 0 ? 5 : 20),
-                );
-              },
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 800,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    MyGenericListElement(
+                      leading: const Icon(Icons.wifi_off_rounded),
+                      title: offlineNodes.isNotEmpty ? '${offlineNodes.length} Nodi Offline' : 'Tutti i nodi sono online o in stato sconosciuto',
+                    ),
+                    if (offlineNodes.isNotEmpty) ... [ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxHeight: 600,
+                      ),
+                      child: Card(
+                        elevation: 10,
+                        child: Padding(
+                          padding: const EdgeInsets.all(25),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Expanded(
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: offlineNodes.length,
+                                  itemBuilder: (context, index) {
+                                    return MyGenericListElement(
+                                      title: offlineNodes[index]['node_name'],
+                                      subtitle: offlineNodes[index]['area_name'],
+                                      leading: const Icon(Icons.room),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )],
+                  ],
+                ),
+              ),
             ),
           ),
         ),

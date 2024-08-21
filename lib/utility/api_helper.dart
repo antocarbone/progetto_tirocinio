@@ -362,8 +362,8 @@ class Sensor {
   final int id;
   final String nome;
   final String unitaMisura;
-  final double lettura;
-  final DateTime dataLettura;
+  final double? lettura;
+  final DateTime? dataLettura;
 
   Sensor({
     required this.id,
@@ -377,8 +377,8 @@ class Sensor {
     final int id = json['id_sensor'];
     final String nome = json['sens_name'];
     final String unitaMisura = json['unit'];
-    final double lettura = double.parse(json['value']);
-    final DateTime dataLettura = historyDateFormatter.parseUtc(json['lecture_date']);
+    final double? lettura = json['value'] == null ? null : double.parse(json['value']);
+    final DateTime? dataLettura = json['lecture_date'] == null ? null : historyDateFormatter.parseUtc(json['lecture_date']);
 
     return Sensor(
         id: id, nome: nome, unitaMisura: unitaMisura, lettura: lettura, dataLettura: dataLettura);
@@ -466,8 +466,8 @@ Future<List<FlSpot>> getSensorReadings(int sensorId, DateTime start, DateTime en
 class BinarySensor {
   final int id;
   final String nome;
-  final bool valore;
-  final DateTime dataLettura;
+  final bool? valore;
+  final DateTime? dataLettura;
   final String stringaTrue;
   final String stringaFalse;
   final String codiceIcona;
@@ -484,8 +484,8 @@ class BinarySensor {
   factory BinarySensor.fromJson(Map<String, dynamic> json) {
     final int id = json['id_bin_sensor'];
     final String nome = json['sens_name'];
-    final bool valore = json['value'];
-    final DateTime dataLettura = historyDateFormatter.parseUtc(json['lecture_date']);
+    final bool? valore = json['value'];
+    final DateTime? dataLettura = json['lecture_date'] == null ? null : historyDateFormatter.parseUtc(json['lecture_date']);
     final String stringaTrue = json['true_string'];
     final String stringaFalse = json['false_string'];
     final String codiceIcona = json['icon'];
@@ -572,7 +572,8 @@ class Nodo {
 }
 
 Future<String> addNode(Map<String, dynamic> data, String token) async {
-  final response = await requestHelper.postRequest('/nodes/new', data, token);
+  print(data);
+  final response = await requestHelper.postRequest('/areas/nodes/new', data, token);
 
   if (response.statusCode == 201) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -587,7 +588,7 @@ Future<String> addNode(Map<String, dynamic> data, String token) async {
 
 
 Future<String> deleteNode(String id, String token) async {
-  final response = await requestHelper.deleteRequest('/nodes/', {'id':id}, token);
+  final response = await requestHelper.deleteRequest('/areas/nodes/', {'id_node':id}, token);
 
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -627,6 +628,19 @@ Future<List<Nodo>> getAllAreaNodes(String nomeArea, String token) async {
   }
 }
 
+Future<List<dynamic>> getAllUserOfflineNodes(String token) async {
+  final response = await requestHelper.getRequest('/areas/nodes/offline', token);
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body) as List<dynamic>;
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
 Future<Map<String, dynamic>> getAllNodeSensors(String nodeId, String token) async {
   final response = await requestHelper.postRequest('/areas/nodes/sensors/', {"id_node":nodeId}, token);
 
@@ -648,6 +662,8 @@ Future<Map<String, dynamic>> getAllNodeSensors(String nodeId, String token) asyn
     throw Exception(error['error']);
   }
 }
+
+
 
 class StatoNodo {
   final String id;
@@ -704,11 +720,11 @@ class NotificaSensore {
   NotificaSensore({required this.id, required this.dataCreazione, required this.nome, required this.trigger, required this.benchmark, required this.status});
 
   factory NotificaSensore.fromJson(Map<String, dynamic> json) {
-    final int id = json['id_sensor'];
+    final int id = json['id_notify'];
     final String nome = json['name'];
-    final DateTime dataCreazione = json['date'];
+    final DateTime dataCreazione = historyDateFormatter.parseUtc(json['date']);
     final String trigger = json['trigger'];
-    final double benchmark = json['benchmark'];
+    final double benchmark = double.parse(json['benchmark']);
     final bool status = json['status'];
 
     return NotificaSensore(
@@ -722,9 +738,28 @@ class NotificaSensore {
   }
 }
 
-Future<String> addNotify(String nome, String trigger, double benchmark, String token) async {
+Future<List<NotificaSensore>> getAllUserNotify(String idSensor, String token) async {
+  final response = await requestHelper.postRequest('/notify/', {'id_sensor':idSensor}, token);
+
+  if (response.statusCode == 200) {
+    final List<NotificaSensore> notifiche = [];
+    for (Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
+      NotificaSensore notifica = NotificaSensore.fromJson(element);
+      notifiche.add(notifica);
+    }
+    return notifiche;
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+Future<String> addNotify(String idSensor, String nome, String trigger, double benchmark, String token) async {
   final response = await requestHelper.postRequest('/notify/add',
       {
+        "id_sensor":idSensor,
         "date":dateTimeFormatter.format(DateTime.now()),
         "name":nome,
         "trigger":trigger,
@@ -764,16 +799,16 @@ class NotificaSensoreBinario {
   final int id;
   final DateTime dataCreazione;
   final String nome;
-  final double benchmark;
+  final bool benchmark;
   final bool status;
 
   NotificaSensoreBinario({required this.id, required this.dataCreazione, required this.nome, required this.benchmark, required this.status});
 
   factory NotificaSensoreBinario.fromJson(Map<String, dynamic> json) {
-    final int id = json['id_sensor'];
+    final int id = json['id_notify'];
     final String nome = json['name'];
-    final DateTime dataCreazione = json['date'];
-    final double benchmark = json['benchmark'];
+    final DateTime dataCreazione = historyDateFormatter.parseUtc(json['date']);
+    final bool benchmark = json['benchmark'];
     final bool status = json['status'];
 
     return NotificaSensoreBinario(
@@ -786,9 +821,32 @@ class NotificaSensoreBinario {
   }
 }
 
-Future<String> addBinaryNotify(String nome, bool benchmark, String token) async {
+
+Future<List<NotificaSensoreBinario>> getAllUserBinaryNotify(String idSensor, String token) async {
+  final response = await requestHelper.postRequest('/notify/', {'id_bin_sensor':idSensor}, token);
+
+  if (response.statusCode == 200) {
+    final List<NotificaSensoreBinario> notifiche = [];
+    for (Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
+      NotificaSensoreBinario notifica = NotificaSensoreBinario.fromJson(element);
+      notifiche.add(notifica);
+    }
+    return notifiche;
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
+
+
+Future<String> addBinaryNotify(String idBinSensor, String nome, bool benchmark, String token) async {
+  print(nome);
   final response = await requestHelper.postRequest('/notify/add_binary',
       {
+        "id_bin_sensor":idBinSensor,
         "date":dateTimeFormatter.format(DateTime.now()),
         "name":nome,
         "benchmark":benchmark,
@@ -813,7 +871,7 @@ Future<String> deleteBinaryNotify(int id, String token) async {
         "id_bin_notify":id
       }, token);
 
-  if (response.statusCode == 201) {
+  if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
     return message['message'];
   } else if (response.statusCode == 401) {
@@ -828,10 +886,10 @@ Future<String> deleteBinaryNotify(int id, String token) async {
 Future<String> updateNotify(int id, String token) async {
   final response = await requestHelper.postRequest('/notify/change_status',
       {
-        "id_notifica":id
+        "id_notify":id
       }, token);
 
-  if (response.statusCode == 201) {
+  if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
     return message['message'];
   } else if (response.statusCode == 401) {
