@@ -26,6 +26,7 @@ class _MyAppState extends State<MyApp> {
     UrlInitImpl initializer = UrlInitImpl();
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: theme.lightHighContrast(),
       home: initializer.initUrl(),
     );
