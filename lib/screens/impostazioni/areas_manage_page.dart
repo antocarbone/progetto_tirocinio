@@ -46,10 +46,10 @@ class _AreasManagePageState extends State<AreasManagePage> {
       _token = tmpToken!;
     });
 
-    initAreas();
+    await initAreas();
   }
 
-  void initAreas() async {
+  Future<void> initAreas() async {
     try {
       List<Area> tmp = await getAllAreas(_token!);
 
@@ -81,104 +81,111 @@ class _AreasManagePageState extends State<AreasManagePage> {
         title: const Text('Gestione Aree'),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 500),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  if (!isAreasInit) ...[
-                    const CircularProgressIndicator()
-                  ] else if (aree.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 10),
-                      child: Center(
-                          child: Text('Le tue aree',
-                              style: TextStyle(
-                                  fontSize: 25, fontWeight: FontWeight.bold))),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: aree.length,
-                        itemBuilder: (context, index) {
-                          return MyGenericListElement(
-                            leading: const Icon(Icons.room),
-                            title: aree[index].nome,
-                            trailing: IconButton(
-                              onPressed: () {
-                                showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return ConfirmDelete(onConfirm: () async {
-                                        try {
-                                          String res = await deleteArea(
-                                              aree[index].nome, _token!);
-                                          Utils.showSnackBar(context,
-                                              'AREA ELIMINATA', res, false);
-                                          Navigator.of(context).pop();
-                                          initAreas();
-                                        } on HttpException catch (e) {
-                                          await _prefs.remove('token');
-                                          await _prefs.remove('tipo');
-                                          Utils.showSnackBar(context, 'ERRORE',
-                                              e.message, true);
-                                          Navigator.of(
-                                                  context)
-                                              .pushAndRemoveUntil(
-                                                  MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          const LoginPage()),
-                                                  (Route<dynamic> route) =>
-                                                      false);
-                                        } on Exception catch (e) {
-                                          Utils.showSnackBar(context, 'ERRORE',
-                                              e.toString(), true);
-                                          Navigator.of(context).pop();
-                                        }
-                                      });
-                                    });
+        child: RefreshIndicator(
+          onRefresh: () async {
+            return await initAreas();
+          },
+          child: ListView(
+            children: [Padding(
+              padding: const EdgeInsets.all(12),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      if (!isAreasInit) ...[
+                        const CircularProgressIndicator()
+                      ] else if (aree.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Center(
+                              child: Text('Le tue aree',
+                                  style: TextStyle(
+                                      fontSize: 25, fontWeight: FontWeight.bold))),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: aree.length,
+                            itemBuilder: (context, index) {
+                              return MyGenericListElement(
+                                leading: const Icon(Icons.room),
+                                title: aree[index].nome,
+                                trailing: IconButton(
+                                  onPressed: () {
+                                    showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return ConfirmDelete(onConfirm: () async {
+                                            try {
+                                              String res = await deleteArea(
+                                                  aree[index].nome, _token!);
+                                              Utils.showSnackBar(context,
+                                                  'AREA ELIMINATA', res, false);
+                                              Navigator.of(context).pop();
+                                              initAreas();
+                                            } on HttpException catch (e) {
+                                              await _prefs.remove('token');
+                                              await _prefs.remove('tipo');
+                                              Utils.showSnackBar(context, 'ERRORE',
+                                                  e.message, true);
+                                              Navigator.of(
+                                                      context)
+                                                  .pushAndRemoveUntil(
+                                                      MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              const LoginPage()),
+                                                      (Route<dynamic> route) =>
+                                                          false);
+                                            } on Exception catch (e) {
+                                              Utils.showSnackBar(context, 'ERRORE',
+                                                  e.toString(), true);
+                                              Navigator.of(context).pop();
+                                            }
+                                          });
+                                        });
+                                  },
+                                  icon: const Icon(Icons.delete_rounded),
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      ] else ...[
+                        const Center(
+                            child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 5),
+                          child: Text('Non sono presenti aree'),
+                        ))
+                      ],
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AddAreaDialog(
+                                  token: _token!,
+                                  valueController: _valueController,
+                                  addArea: () {
+                                    initAreas();
+                                  },
+                                  prefs: _prefs,
+                                );
                               },
-                              icon: const Icon(Icons.delete_rounded),
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  ] else ...[
-                    const Center(
-                        child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 5),
-                      child: Text('Non sono presenti aree'),
-                    ))
-                  ],
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AddAreaDialog(
-                              token: _token!,
-                              valueController: _valueController,
-                              addArea: () {
-                                initAreas();
-                              },
-                              prefs: _prefs,
                             );
                           },
-                        );
-                      },
-                      child: const Text('Aggiungi un\'area'),
-                    ),
+                          child: const Text('Aggiungi un\'area'),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            )],
           ),
         ),
       ),

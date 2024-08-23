@@ -106,9 +106,8 @@ class _ChangeMailPageState extends State<ChangeMailPage> {
                                         }
                                         return null;
                                       },
-                                      obscureText: true,
                                       decoration: InputDecoration(
-                                        labelText: 'Password',
+                                        labelText: 'E-mail',
                                         border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(12),

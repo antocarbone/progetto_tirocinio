@@ -46,10 +46,10 @@ class _UsersManagePageState extends State<UsersManagePage> {
     setState(() {
       _token = tmpToken!;
     });
-    initUtenti();
+    await initUtenti();
   }
 
-  void initUtenti() async {
+  Future <void> initUtenti() async {
     try {
       List<User> tmpUtenti = await getAllUsers(_token!);
       setState(() {
@@ -83,129 +83,128 @@ class _UsersManagePageState extends State<UsersManagePage> {
         title: const Text('Gestione Utenti'),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 500),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 10),
-                    child: Center(
-                        child: Text('Utenti registrati',
-                            style: TextStyle(
-                                fontSize: 25, fontWeight: FontWeight.bold))),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          if (!isUsersInit) ...[
-                            const CircularProgressIndicator()
-                          ] else if (utenti.isNotEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 5),
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: utenti.length,
-                                itemBuilder: (context, index) {
-                                  return GestureDetector(
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  UserDetailPage(
-                                                      utente: utenti[index])));
-                                    },
-                                    child: MyGenericListElement(
-                                      leading: const Icon(Icons.person),
-                                      title:
-                                          '${utenti[index].nome} ${utenti[index].cognome}',
-                                      subtitle: utenti[index].mail,
-                                      trailing: IconButton(
-                                        onPressed: () {
-                                          showDialog(
-                                              context: context,
-                                              builder: (context) {
-                                                return ConfirmDelete(
-                                                    onConfirm: () async {
-                                                  try {
-                                                    String res =
-                                                        await deleteUser(
-                                                            _token!,
-                                                            utenti[index].mail);
-                                                    Utils.showSnackBar(
-                                                        context,
-                                                        'UTENTE ELIMINATO',
-                                                        res,
-                                                        false);
-                                                    Navigator.of(context).pop();
-                                                    setState(() {
-                                                      utenti.removeAt(index);
-                                                    });
-                                                  } on HttpException catch (e) {
-                                                    await _prefs
-                                                        .remove('token');
-                                                    await _prefs.remove('tipo');
-                                                    Utils.showSnackBar(
-                                                        context,
-                                                        'ERRORE',
-                                                        e.message,
-                                                        true);
-                                                    Navigator.of(context)
-                                                        .pushAndRemoveUntil(
-                                                            MaterialPageRoute(
-                                                                builder:
-                                                                    (context) =>
-                                                                        const LoginPage()),
-                                                            (Route<dynamic>
-                                                                    route) =>
-                                                                false);
-                                                  } on Exception catch (e) {
-                                                    Utils.showSnackBar(
-                                                        context,
-                                                        'ERRORE',
-                                                        e.toString(),
-                                                        true);
-                                                    Navigator.of(context).pop();
-                                                  }
-                                                });
-                                              });
-                                        },
-                                        icon: const Icon(Icons.delete_rounded),
-                                      ),
-                                    ),
-                                  );
+        child: RefreshIndicator(
+          onRefresh: () async {
+            return await initUtenti();
+          },
+          child: ListView(
+            children: [Padding(
+              padding: const EdgeInsets.all(12),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      if (!isUsersInit) ...[
+                        const CircularProgressIndicator()
+                      ] else if (utenti.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Center(
+                              child: Text('Utenti Registrati',
+                                  style: TextStyle(
+                                      fontSize: 25, fontWeight: FontWeight.bold))),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: utenti.length,
+                            itemBuilder: (context, index) {
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              UserDetailPage(
+                                                  utente: utenti[index])));
                                 },
-                              ),
-                            )
-                          ] else ...[
-                            const Center(
-                                child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 5),
-                              child: Text('Nessun utente registrato'),
-                            ))
-                          ],
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) =>
-                                        const RegistrationPage()));
-                              },
-                              child: const Text('Registra un nuovo utente'),
-                            ),
+                                child: MyGenericListElement(
+                                  leading: const Icon(Icons.person),
+                                  title:
+                                      '${utenti[index].nome} ${utenti[index].cognome}',
+                                  subtitle: utenti[index].mail,
+                                  trailing: IconButton(
+                                    onPressed: () {
+                                      showDialog(
+                                          context: context,
+                                          builder: (context) {
+                                            return ConfirmDelete(
+                                                onConfirm: () async {
+                                              try {
+                                                String res =
+                                                    await deleteUser(
+                                                        _token!,
+                                                        utenti[index].mail);
+                                                Utils.showSnackBar(
+                                                    context,
+                                                    'UTENTE ELIMINATO',
+                                                    res,
+                                                    false);
+                                                Navigator.of(context).pop();
+                                                setState(() {
+                                                  utenti.removeAt(index);
+                                                });
+                                              } on HttpException catch (e) {
+                                                await _prefs
+                                                    .remove('token');
+                                                await _prefs.remove('tipo');
+                                                Utils.showSnackBar(
+                                                    context,
+                                                    'ERRORE',
+                                                    e.message,
+                                                    true);
+                                                Navigator.of(context)
+                                                    .pushAndRemoveUntil(
+                                                        MaterialPageRoute(
+                                                            builder:
+                                                                (context) =>
+                                                                    const LoginPage()),
+                                                        (Route<dynamic>
+                                                                route) =>
+                                                            false);
+                                              } on Exception catch (e) {
+                                                Utils.showSnackBar(
+                                                    context,
+                                                    'ERRORE',
+                                                    e.toString(),
+                                                    true);
+                                                Navigator.of(context).pop();
+                                              }
+                                            });
+                                          });
+                                    },
+                                    icon: const Icon(Icons.delete_rounded),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        ],
+                        )
+                      ] else ...[
+                        const Center(
+                            child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 5),
+                          child: Text('Nessun utente registrato'),
+                        ))
+                      ],
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) =>
+                                    const RegistrationPage()));
+                          },
+                          child: const Text('Registra un nuovo utente'),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            )],
           ),
         ),
       ),

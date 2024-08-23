@@ -75,7 +75,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
     initUserAreas();
   }
 
-  void initUserAreas() async {
+  Future<void> initUserAreas() async {
     try {
       List<Area> tmp = await getAllUserAreas(_token!);
       if (mounted) {
@@ -94,7 +94,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
     initAreaNodes();
   }
 
-  void initAreaNodes() async {
+  Future<void> initAreaNodes() async {
     try {
       List<Nodo> tmp = await getAllAreaNodes(widget.area.nome, _token!);
       if (mounted) {
@@ -113,7 +113,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
     initNodeSensors();
   }
 
-  void initNodeSensors() async {
+  Future<void> initNodeSensors() async {
     List<Map<String, dynamic>> tmpNodeSensors = [];
     try {
       for (Nodo nodo in areaNodes) {

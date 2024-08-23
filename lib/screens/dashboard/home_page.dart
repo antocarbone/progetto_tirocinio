@@ -6,7 +6,6 @@ import 'package:dashboard_tirocinio/screens/configurazione/ble_connection_dialog
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'dart:convert';
 
 import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog.dart';
@@ -64,10 +63,10 @@ class _HomePageState extends State<HomePage> {
         _userType = tmpType!;
       });
     }
-    initUserAreas();
+    await initUserAreas();
   }
 
-  void initUserAreas() async {
+  Future<void> initUserAreas() async {
     List<Area> tmp;
     try {
       tmp = await getAllUserAreas(_token!, null);
@@ -239,24 +238,29 @@ class _HomePageState extends State<HomePage> {
                 ],
                 Flexible(
                   flex: 6,
-                  child: ListView.builder(
-                    itemCount: userAreas.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(
-                                      builder: (context) => DettaglioAreaPage(
-                                          area: userAreas[index])),
-                                  (Route<dynamic> route) => false);
-                            },
-                            child: ListTile(
-                                title: Center(
-                                    child: Text(userAreas[index].nome)))),
-                      );
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      return await initUserAreas();
                     },
+                    child: ListView.builder(
+                      itemCount: userAreas.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                        builder: (context) => DettaglioAreaPage(
+                                            area: userAreas[index])),
+                                    (Route<dynamic> route) => false);
+                              },
+                              child: ListTile(
+                                  title: Center(
+                                      child: Text(userAreas[index].nome)))),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -265,59 +269,73 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 800,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    MyGenericListElement(
-                      leading: const Icon(Icons.wifi_off_rounded),
-                      title: offlineNodes.isNotEmpty
-                          ? '${offlineNodes.length} Nodi Offline'
-                          : 'Tutti i nodi sono online o in stato sconosciuto',
-                    ),
-                    if (offlineNodes.isNotEmpty) ...[
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxHeight: 600,
-                        ),
-                        child: Card(
-                          elevation: 10,
-                          child: Padding(
-                            padding: const EdgeInsets.all(25),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Expanded(
-                                  child: ListView.builder(
-                                    shrinkWrap: true,
-                                    itemCount: offlineNodes.length,
-                                    itemBuilder: (context, index) {
-                                      return MyGenericListElement(
-                                        title: offlineNodes[index]['node_name'],
-                                        subtitle: offlineNodes[index]
-                                            ['area_name'],
-                                        leading: const Icon(Icons.room),
-                                      );
-                                    },
+        child: RefreshIndicator(
+          onRefresh: () async {
+            return await initOfflineNodes();
+          },
+          child: ListView(
+            scrollDirection: Axis.vertical,
+            children: [Padding(
+              padding: const EdgeInsets.all(12),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 800,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      MyGenericListElement(
+                        leading: offlineNodes.isEmpty
+                            ? const Icon(Icons.wifi)
+                            : const Icon(Icons.wifi_off_rounded),
+                        title: offlineNodes.isNotEmpty
+                            ? '${offlineNodes.length} ${offlineNodes.length == 1 ? 'Nodo':'Nodi'} Offline'
+                            : 'Tutti i nodi sono online o in stato sconosciuto',
+                      ),
+                      if (offlineNodes.isNotEmpty) ...[
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxHeight: 600,
+                          ),
+                          child: Card(
+                            elevation: 10,
+                            child: Padding(
+                              padding: const EdgeInsets.all(25),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Expanded(
+                                    child: RefreshIndicator(
+                                      onRefresh: () async {
+                                        await initUserAreas();
+                                        await initOfflineNodes();
+                                      },
+                                      child: ListView.builder(
+                                        shrinkWrap: true,
+                                        itemCount: offlineNodes.length,
+                                        itemBuilder: (context, index) {
+                                          return MyGenericListElement(
+                                            title: offlineNodes[index]['node_name'],
+                                            subtitle: offlineNodes[index]
+                                                ['area_name'],
+                                            leading: const Icon(Icons.room),
+                                          );
+                                        },
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      )
+                        )
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
+            )],
           ),
         ),
       ),

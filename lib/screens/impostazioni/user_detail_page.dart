@@ -167,13 +167,16 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       ),
                       Flexible(
                         flex: 2,
-                        child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (context) =>
-                                      ChangeMailPage(utente: widget.utente)));
-                            },
-                            child: const Text('Cambia e-mail')),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) =>
+                                        ChangeMailPage(utente: widget.utente)));
+                              },
+                              child: const Text('Cambia e-mail')),
+                        ),
                       ),
                       Flexible(
                         flex: 2,
