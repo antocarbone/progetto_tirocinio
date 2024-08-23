@@ -1,23 +1,32 @@
+import 'dart:io';
+
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
 
-class BaseApiUrlSetPage extends StatefulWidget {
-  const BaseApiUrlSetPage({super.key});
+class ChangeMailPage extends StatefulWidget {
+  final User? utente;
+  const ChangeMailPage({super.key, this.utente});
 
   @override
-  State<BaseApiUrlSetPage> createState() => _BaseApiUrlSetPageState();
+  State<ChangeMailPage> createState() => _ChangeMailPageState();
 }
 
-class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
+class _ChangeMailPageState extends State<ChangeMailPage> {
   late EncryptedSharedPreferences _prefs;
+  String? _token;
+  String? _userType;
   final _formKey = GlobalKey<FormState>();
-  final _urlController = TextEditingController();
+  final _mailController = TextEditingController();
+  final _confirmController = TextEditingController();
 
   void initPreferences() async {
     EncryptedSharedPreferences tmp;
+    String? tmpToken = '';
+    String? tmpType = '';
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
@@ -32,6 +41,14 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
 
     setState(() {
       _prefs = tmp;
+    });
+
+    tmpToken = _prefs.getString('token');
+    tmpType = _prefs.getString('tipo');
+
+    setState(() {
+      _token = tmpToken!;
+      _userType = tmpType!;
     });
   }
 
@@ -49,7 +66,7 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
         title: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Base Api Url'),
+            Text('Modifica'),
           ],
         ),
       ),
@@ -66,10 +83,9 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const FittedBox(
-                          child: Text('Inserisci il base url dell\'api',
-                              style: TextStyle(
-                                  fontSize: 25, fontWeight: FontWeight.bold))),
+                      const Text('Modifica mail',
+                          style: TextStyle(
+                              fontSize: 25, fontWeight: FontWeight.bold)),
                       Padding(
                         padding: const EdgeInsets.only(top: 30),
                         child: Form(
@@ -83,19 +99,23 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
                                   child: TextFormField(
                                       validator: (valore) {
                                         if (valore == null || valore.isEmpty) {
-                                          return 'Inserisci l\'URL';
+                                          return 'Inserisci la nuova mail';
+                                        }
+                                        if (!EmailValidator.validate(valore)) {
+                                          return 'Inserisci una mail valida!';
                                         }
                                         return null;
                                       },
+                                      obscureText: true,
                                       decoration: InputDecoration(
-                                        labelText: 'URL',
+                                        labelText: 'Password',
                                         border: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
                                       ),
-                                      controller: _urlController),
-                                )
+                                      controller: _mailController),
+                                ),
                               ],
                             )),
                       ),
@@ -106,27 +126,27 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
                               onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
                                   try {
-                                    if (await _prefs.setString(
-                                        'url', _urlController.text)) {
-                                      await checkBaseUrl();
-                                      Utils.showSnackBar(
-                                          context,
-                                          'BASE URL IMPOSTATO',
-                                          'Procedi al log-In',
-                                          false);
-                                      Navigator.of(context).pushAndRemoveUntil(
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const LoginPage()),
-                                          (Route<dynamic> route) => false);
-                                    } else {
-                                      Utils.showSnackBar(context, 'ERRORE',
-                                          'Riavvia l\'app e riprova!', true);
-                                    }
+                                    String res = await changeMail(
+                                        _token!,
+                                        widget.utente?.mail,
+                                        _mailController.text);
+                                    Utils.showSnackBar(context,
+                                        'E-MAIL MODIFICATA', res, false);
+                                    Navigator.of(context).pop();
+                                  } on HttpException catch (e) {
+                                    await _prefs.remove('token');
+                                    await _prefs.remove('tipo');
+                                    Utils.showSnackBar(
+                                        context, 'ERRORE', e.message, true);
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const LoginPage()),
+                                        (Route<dynamic> route) => false);
                                   } on Exception catch (e) {
-                                    await _prefs.remove('url');
                                     Utils.showSnackBar(
                                         context, 'ERRORE', e.toString(), true);
+                                    Navigator.of(context).pop();
                                   }
                                 }
                               },
@@ -146,7 +166,8 @@ class _BaseApiUrlSetPageState extends State<BaseApiUrlSetPage> {
 
   @override
   void dispose() {
-    _urlController.dispose();
+    _mailController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
 }

@@ -36,13 +36,12 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
-      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS',
+          'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
       return;
     }
 
@@ -61,7 +60,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
     final nodeData = widget.nodeData;
 
     await initPreferences();
-    if (_token != null){
+    if (_token != null) {
       Map<String, dynamic> tmpBrokerData = await getBrokerInfo(_token!);
       setState(() {
         brokerData.addAll(tmpBrokerData);
@@ -149,10 +148,7 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
     String? res;
     try {
       res = await _flutterEspBleProvPlugin.sendCustomData(
-          'mqtt-data',
-          jsonEncode(brokerData),
-          name,
-          pop);
+          'mqtt-data', jsonEncode(brokerData), name, pop);
       if (res != null) {
         Map<String, dynamic> resJson = json.decode(res);
         if (resJson['status'] == 'success') {
@@ -201,23 +197,27 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
               info: 'Connessione al dispositivo',
             )
           ],
-          if (_deviceConnected != null) ...[buildStatusIndicator(
-            status: _brokerDataSent,
-            inProgressMessage: 'Sto inviando il broker al device...',
-            successMessage: 'Invio riuscito!',
-            failureMessage: 'Invio del broker fallito!',
-          )] else ... [
+          if (_deviceConnected != null) ...[
+            buildStatusIndicator(
+              status: _brokerDataSent,
+              inProgressMessage: 'Sto inviando il broker al device...',
+              successMessage: 'Invio riuscito!',
+              failureMessage: 'Invio del broker fallito!',
+            )
+          ] else ...[
             const RowStatusIndicator(
               indicator: Icon(Icons.circle_outlined),
               info: 'Invio configurazione broker',
             )
           ],
-          if (_brokerDataSent != null) ... [buildStatusIndicator(
-            status: _gotInfos,
-            inProgressMessage: 'Sto richiedendo le info al device...',
-            successMessage: 'Info ottenute!',
-            failureMessage: 'Richiesta fallita!',
-          )] else ... [
+          if (_brokerDataSent != null) ...[
+            buildStatusIndicator(
+              status: _gotInfos,
+              inProgressMessage: 'Sto richiedendo le info al device...',
+              successMessage: 'Info ottenute!',
+              failureMessage: 'Richiesta fallita!',
+            )
+          ] else ...[
             const RowStatusIndicator(
               indicator: Icon(Icons.circle_outlined),
               info: 'Richiesta dati del nodo',
@@ -238,19 +238,21 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
             )
           ] else if (_deviceScanned == false ||
               _deviceConnected == false ||
-              _brokerDataSent == false ||  _gotInfos == false) ...[
+              _brokerDataSent == false ||
+              _gotInfos == false) ...[
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
               child: const Text('Chiudi'),
             )
-          ] else ... [
+          ] else ...[
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                Utils.showSnackBar(context, 'OPS', 'Info del device non corrette!', true);
-                },
+                Utils.showSnackBar(
+                    context, 'OPS', 'Info del device non corrette!', true);
+              },
               child: const Text('Chiudi'),
             )
           ]
@@ -285,7 +287,11 @@ class _BleConnectionDialogState extends State<BleConnectionDialog> {
 
   bool _checkJsonDeviceInfo(Map<String, dynamic>? jsonInfos) {
     if (_gotInfos == true) {
-      if (jsonInfos != null && jsonInfos['mac_address'] != null && jsonInfos['unique_id'] != null && jsonInfos['num_of_sensors'] != null && jsonInfos['num_of_binary_sensors'] != null) {
+      if (jsonInfos != null &&
+          jsonInfos['mac_address'] != null &&
+          jsonInfos['unique_id'] != null &&
+          jsonInfos['num_of_sensors'] != null &&
+          jsonInfos['num_of_binary_sensors'] != null) {
         return true;
       } else {
         return false;

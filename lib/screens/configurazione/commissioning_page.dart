@@ -16,7 +16,14 @@ class CommissioningPage extends StatefulWidget {
   final String nodeName;
   final List<Map<String, dynamic>> sensors;
   final List<Map<String, dynamic>> binarySensors;
-  const CommissioningPage({super.key, required this.nodeData, required this.uniqueDeviceId, required this.nodeArea, required this.nodeName, required this.sensors, required this.binarySensors});
+  const CommissioningPage(
+      {super.key,
+      required this.nodeData,
+      required this.uniqueDeviceId,
+      required this.nodeArea,
+      required this.nodeName,
+      required this.sensors,
+      required this.binarySensors});
 
   @override
   State<CommissioningPage> createState() => _CommissioningPageState();
@@ -45,13 +52,12 @@ class _CommissioningPageState extends State<CommissioningPage> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
-      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS',
+          'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
       return;
     }
 
@@ -67,7 +73,8 @@ class _CommissioningPageState extends State<CommissioningPage> {
   }
 
   Future<bool> scanWifiNetworks() async {
-    final scannedNetworks = await _flutterEspBleProvPlugin.scanWifiNetworks(widget.nodeData['name'], widget.nodeData['pop']);
+    final scannedNetworks = await _flutterEspBleProvPlugin.scanWifiNetworks(
+        widget.nodeData['name'], widget.nodeData['pop']);
     setState(() {
       networks = [];
       networks = scannedNetworks;
@@ -89,7 +96,8 @@ class _CommissioningPageState extends State<CommissioningPage> {
     final proofOfPossession = widget.nodeData['pop'];
     final passphrase = _passwordController.text;
     try {
-      return await _flutterEspBleProvPlugin.provisionWifi(widget.nodeData['name'], proofOfPossession, selectedSsid, passphrase);
+      return await _flutterEspBleProvPlugin.provisionWifi(
+          widget.nodeData['name'], proofOfPossession, selectedSsid, passphrase);
     } catch (e) {
       return false;
     }
@@ -112,15 +120,16 @@ class _CommissioningPageState extends State<CommissioningPage> {
           padding: EdgeInsets.all(defaultPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [buildStatusIndicator(
+            children: [
+              buildStatusIndicator(
                 status: _wifiScanned,
                 inProgressMessage: 'Scansiono le reti wifi...',
                 successMessage: 'Reti trovate!',
                 failureMessage: 'Scansione delle reti wifi fallita!',
                 futureFunction: scanWifiNetworks,
               ),
-              if (_wifiScanned == true) ... [
-                  Expanded(
+              if (_wifiScanned == true) ...[
+                Expanded(
                   child: Container(
                     padding: EdgeInsets.all(defaultPadding),
                     child: Column(
@@ -133,16 +142,25 @@ class _CommissioningPageState extends State<CommissioningPage> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Reti WiFi', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                              const Text('Reti WiFi',
+                                  style: TextStyle(
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.bold)),
                               IconButton(
                                   onPressed: () async {
-                                    Utils.showSnackBar(context, 'Attendi', 'Sto scansionando le reti wifi disponibili...', false);
-                                    if(await scanWifiNetworks()) {
-                                      Utils.showSnackBar(context, 'Fatto!', 'Scansione terminata', false);
+                                    Utils.showSnackBar(
+                                        context,
+                                        'Attendi',
+                                        'Sto scansionando le reti wifi disponibili...',
+                                        false);
+                                    if (await scanWifiNetworks()) {
+                                      Utils.showSnackBar(context, 'Fatto!',
+                                          'Scansione terminata', false);
                                     } else {
-                                      Utils.showSnackBar(context, 'Ops', 'Qualcosa è andato storto', true);
+                                      Utils.showSnackBar(context, 'Ops',
+                                          'Qualcosa è andato storto', true);
                                     }
-                                    },
+                                  },
                                   icon: const Icon(Icons.refresh))
                             ],
                           ),
@@ -166,14 +184,24 @@ class _CommissioningPageState extends State<CommissioningPage> {
                                       builder: (BuildContext context) {
                                         return WifiPasswordDialog(
                                           selectedSsid: selectedSsid,
-                                          passwordController: _passwordController,
+                                          passwordController:
+                                              _passwordController,
                                           provisionWifi: provisionWifi,
                                           onComplete: () async {
                                             await initPreferences();
                                             late String res;
                                             try {
-                                              Map<String, dynamic> data = {'id_node' : widget.uniqueDeviceId, 'node_name': widget.nodeName, 'area_name' : widget.nodeArea, 'sensors' : widget.sensors, 'binary_sensors' : widget.binarySensors};
-                                              res = await addNode(data, _token!);
+                                              Map<String, dynamic> data = {
+                                                'id_node':
+                                                    widget.uniqueDeviceId,
+                                                'node_name': widget.nodeName,
+                                                'area_name': widget.nodeArea,
+                                                'sensors': widget.sensors,
+                                                'binary_sensors':
+                                                    widget.binarySensors
+                                              };
+                                              res =
+                                                  await addNode(data, _token!);
                                               if (mounted) {
                                                 Utils.showSnackBar(
                                                     super.context,
@@ -182,10 +210,17 @@ class _CommissioningPageState extends State<CommissioningPage> {
                                                     false);
                                               }
                                             } on HttpException catch (e) {
-                                              await _prefs.clear();
-                                              Navigator.of(context).pushAndRemoveUntil(
-                                                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                                                      (Route<dynamic> route) => false);
+                                              await _prefs.remove('token');
+                                              await _prefs.remove('tipo');
+                                              Utils.showSnackBar(context,
+                                                  'ERRORE', e.message, true);
+                                              Navigator.of(context)
+                                                  .pushAndRemoveUntil(
+                                                      MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              const LoginPage()),
+                                                      (Route<dynamic> route) =>
+                                                          false);
                                               if (mounted) {
                                                 Utils.showSnackBar(
                                                     super.context,
@@ -216,22 +251,22 @@ class _CommissioningPageState extends State<CommissioningPage> {
                     ),
                   ),
                 ),
-                ] else if (_wifiScanned == false) ... [
+              ] else if (_wifiScanned == false) ...[
                 Container(
                   padding: EdgeInsets.all(defaultPadding),
-                  child: const Center(child: Text('Inizializzazione fallita', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold))),
+                  child: const Center(
+                      child: Text('Inizializzazione fallita',
+                          style: TextStyle(
+                              fontSize: 30, fontWeight: FontWeight.bold))),
                 ),
                 ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context)
-                          .pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  const HomePage()),
-                              (Route<dynamic> route) =>
-                          false);
-                    },
-                    child: const Text('Torna alla Home'),
+                  onPressed: () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                            builder: (context) => const HomePage()),
+                        (Route<dynamic> route) => false);
+                  },
+                  child: const Text('Torna alla Home'),
                 )
               ]
             ],
@@ -325,7 +360,9 @@ class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
                 _isObscured = !_isObscured;
               });
             },
-            icon: _isObscured ? const Icon(Icons.visibility_off) : const Icon(Icons.visibility),
+            icon: _isObscured
+                ? const Icon(Icons.visibility_off)
+                : const Icon(Icons.visibility),
           ),
           hintText: "Inserisci quì la password",
         ),
@@ -352,26 +389,32 @@ class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
                       return AlertDialog(
                         title: snapshot.data == true
                             ? const Center(
-                          child: FittedBox(
-                            child: Text('Dispositivo connesso!',
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                          ),
-                        )
+                                child: FittedBox(
+                                  child: Text('Dispositivo connesso!',
+                                      style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                              )
                             : const Center(
-                          child: FittedBox(
-                            child: Text('Qualcosa è andato storto!',
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                          ),
-                        ),
+                                child: FittedBox(
+                                  child: Text('Qualcosa è andato storto!',
+                                      style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                              ),
                         content: snapshot.data == true
                             ? const SizedBox(
-                            height: 30,
-                            width: 30,
-                            child: FittedBox(child: Icon(Icons.check_circle)))
+                                height: 30,
+                                width: 30,
+                                child:
+                                    FittedBox(child: Icon(Icons.check_circle)))
                             : const SizedBox(
-                            height: 30,
-                            width: 30,
-                            child: FittedBox(child: Icon(Icons.error_rounded))),
+                                height: 30,
+                                width: 30,
+                                child: FittedBox(
+                                    child: Icon(Icons.error_rounded))),
                         actions: [
                           Center(
                             child: ElevatedButton(
@@ -379,8 +422,9 @@ class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
                                 Navigator.of(context).pop();
                                 widget.onComplete();
                                 Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(builder: (context) => const HomePage()),
-                                        (Route<dynamic> route) => false);
+                                    MaterialPageRoute(
+                                        builder: (context) => const HomePage()),
+                                    (Route<dynamic> route) => false);
                               },
                               child: const Text('Termina'),
                             ),
@@ -392,11 +436,15 @@ class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
                         title: Center(
                             child: FittedBox(
                                 child: Text('Attendi',
-                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
+                                    style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold)))),
                         content: SizedBox(
                             height: 30,
                             width: 30,
-                            child: FittedBox(child: CircularProgressIndicator(color: Colors.black))),
+                            child: FittedBox(
+                                child: CircularProgressIndicator(
+                                    color: Colors.black))),
                       );
                     }
                   },
@@ -409,4 +457,3 @@ class _WifiPasswordDialogState extends State<WifiPasswordDialog> {
     );
   }
 }
-

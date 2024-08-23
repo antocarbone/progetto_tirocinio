@@ -10,7 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-
 class BinarySensorDetailPage extends StatefulWidget {
   final BinarySensor sensor;
   const BinarySensorDetailPage({super.key, required this.sensor});
@@ -28,7 +27,8 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
   final DateTime _defaultEnd =
       DateTime.now().subtract(const Duration(minutes: 10));
 
-  BinarySensorReadingsHistory history = BinarySensorReadingsHistory(readings: []);
+  BinarySensorReadingsHistory history =
+      BinarySensorReadingsHistory(readings: []);
   bool _isExpanded = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _valueController = TextEditingController();
@@ -83,7 +83,8 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
           if (_startDateTime != null) {
             if (pickedDateTime.isAfter(_startDateTime!)) {
               BinarySensorReadingsHistory tmpHistory =
-                  await getBinarySensorReadings(widget.sensor.id, _startDateTime!, pickedDateTime, _token!);
+                  await getBinarySensorReadings(widget.sensor.id,
+                      _startDateTime!, pickedDateTime, _token!);
               setState(() {
                 _endDateTime = pickedDateTime;
                 history = tmpHistory;
@@ -148,21 +149,30 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
         history = tmpHistory;
       });
     } on HttpException catch (e) {
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
-      Navigator.of(context).pop();
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     }
     await initNotifiche();
   }
 
   Future<void> initNotifiche() async {
     try {
-      List<NotificaSensoreBinario> tmpNotifiche = await getAllUserBinaryNotify(widget.sensor.id.toString(), _token!);
+      List<NotificaSensoreBinario> tmpNotifiche =
+          await getAllUserBinaryNotify(widget.sensor.id.toString(), _token!);
       setState(() {
         notifiche = tmpNotifiche;
       });
     } on HttpException catch (e) {
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
-      Navigator.of(context).pop();
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     }
   }
 
@@ -251,12 +261,11 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     MyGenericListElement(
-                      leading:
-                          Icon(MdiIcons.fromString(widget.sensor.codiceIcona)),
-                      title: widget.sensor.nome,
-                      subtitle:
-                          '${widget.sensor.valore == null ? 'non disponibile' : widget.sensor.valore!? widget.sensor.stringaTrue : widget.sensor.stringaFalse} ${widget.sensor.dataLettura == null ? '' : '- ${dateTimeFormatter.format(widget.sensor.dataLettura!)}'}'
-                    ),
+                        leading: Icon(
+                            MdiIcons.fromString(widget.sensor.codiceIcona)),
+                        title: widget.sensor.nome,
+                        subtitle:
+                            '${widget.sensor.valore == null ? 'non disponibile' : widget.sensor.valore! ? widget.sensor.stringaTrue : widget.sensor.stringaFalse} ${widget.sensor.dataLettura == null ? '' : '- ${dateTimeFormatter.format(widget.sensor.dataLettura!)}'}'),
                     ConstrainedBox(
                       constraints: const BoxConstraints(
                         maxHeight: 600,
@@ -297,24 +306,29 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                                   ),
                                 ),
                               ),
-                              if (history.readings.isNotEmpty) ... [Expanded(
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: history.readings.length,
-                                  itemBuilder: (context, index) {
-                                    return MyGenericListElement(
-                                      title: history.readings[index].value
-                                          ? widget.sensor.stringaTrue
-                                          : widget.sensor.stringaFalse,
-                                      subtitle: dateTimeFormatter
-                                          .format(history.readings[index].date),
-                                      leading: Icon(MdiIcons.fromString(
-                                          widget.sensor.codiceIcona)),
-                                    );
-                                  },
-                                ),
-                              )] else ... [
-                                const Center(child: Text('Non sono presenti letture nel periodo specificato', textAlign: TextAlign.center))
+                              if (history.readings.isNotEmpty) ...[
+                                Expanded(
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: history.readings.length,
+                                    itemBuilder: (context, index) {
+                                      return MyGenericListElement(
+                                        title: history.readings[index].value
+                                            ? widget.sensor.stringaTrue
+                                            : widget.sensor.stringaFalse,
+                                        subtitle: dateTimeFormatter.format(
+                                            history.readings[index].date),
+                                        leading: Icon(MdiIcons.fromString(
+                                            widget.sensor.codiceIcona)),
+                                      );
+                                    },
+                                  ),
+                                )
+                              ] else ...[
+                                const Center(
+                                    child: Text(
+                                        'Non sono presenti letture nel periodo specificato',
+                                        textAlign: TextAlign.center))
                               ],
                             ],
                           ),
@@ -340,7 +354,8 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                             return MyGenericListElement(
                               leading: const Icon(Icons.notifications),
                               title: notifiche[index].nome,
-                              subtitle: 'Avvisami quando la lettura è ${notifiche[index].benchmark ? widget.sensor.stringaTrue : widget.sensor.stringaFalse}',
+                              subtitle:
+                                  'Avvisami quando la lettura è ${notifiche[index].benchmark ? widget.sensor.stringaTrue : widget.sensor.stringaFalse}',
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -349,26 +364,42 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                                       showDialog(
                                           context: context,
                                           builder: (context) {
-                                            return ConfirmDelete(onConfirm: () async {
+                                            return ConfirmDelete(
+                                                onConfirm: () async {
                                               try {
-                                                String res = await deleteBinaryNotify(notifiche[index].id, _token!);
-                                                Utils.showSnackBar(context, 'NOTIFICA ELIMINATA', res, false);
+                                                String res =
+                                                    await deleteBinaryNotify(
+                                                        notifiche[index].id,
+                                                        _token!);
+                                                Utils.showSnackBar(
+                                                    context,
+                                                    'NOTIFICA ELIMINATA',
+                                                    res,
+                                                    false);
                                                 Navigator.of(context).pop();
                                                 initNotifiche();
                                               } on HttpException catch (e) {
-                                                await _prefs.clear();
-                                                Utils.showSnackBar(context, 'ERRORE', e.message, true);
-                                                Navigator.of(context).pushAndRemoveUntil(
-                                                    MaterialPageRoute(
-                                                        builder: (context) => const LoginPage()),
-                                                        (Route<dynamic> route) => false);
+                                                await _prefs.remove('token');
+                                                await _prefs.remove('tipo');
+                                                Utils.showSnackBar(context,
+                                                    'ERRORE', e.message, true);
+                                                Navigator.of(context)
+                                                    .pushAndRemoveUntil(
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                const LoginPage()),
+                                                        (Route<dynamic>
+                                                                route) =>
+                                                            false);
                                               } on Exception catch (e) {
-                                                Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
-                                                Navigator.of(context).pop();
+                                                Utils.showSnackBar(
+                                                    context,
+                                                    'ERRORE',
+                                                    e.toString(),
+                                                    true);
                                               }
                                             });
-                                          }
-                                      );
+                                          });
                                     },
                                     icon: const Icon(Icons.delete_rounded),
                                   ),
@@ -376,18 +407,30 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                                     value: notifiche[index].status,
                                     onChanged: (value) async {
                                       try {
-                                        String res = await updateNotify(notifiche[index].id, _token!);
-                                        Utils.showSnackBar(context, 'STATO NOTIFICA AGGIORNATO', res, false);
+                                        String res = await updateNotify(
+                                            notifiche[index].id, _token!);
+                                        Utils.showSnackBar(
+                                            context,
+                                            'STATO NOTIFICA AGGIORNATO',
+                                            res,
+                                            false);
                                         initNotifiche();
                                       } on HttpException catch (e) {
-                                        await _prefs.clear();
-                                        Utils.showSnackBar(context, 'ERRORE', e.message, true);
-                                        Navigator.of(context).pushAndRemoveUntil(
-                                            MaterialPageRoute(
-                                                builder: (context) => const LoginPage()),
-                                                (Route<dynamic> route) => false);
+                                        await _prefs.remove('token');
+                                        await _prefs.remove('tipo');
+                                        Utils.showSnackBar(
+                                            context, 'ERRORE', e.message, true);
+                                        Navigator.of(context)
+                                            .pushAndRemoveUntil(
+                                                MaterialPageRoute(
+                                                    builder:
+                                                        (context) =>
+                                                            const LoginPage()),
+                                                (Route<dynamic> route) =>
+                                                    false);
                                       } on Exception catch (e) {
-                                        Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                        Utils.showSnackBar(context, 'ERRORE',
+                                            e.toString(), true);
                                       }
                                     },
                                   ),
@@ -396,7 +439,8 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                             );
                           },
                         ),
-                      )],
+                      )
+                    ],
                     Padding(
                       padding: const EdgeInsets.only(top: 20),
                       child: Center(
@@ -410,20 +454,30 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                                   valueController: _valueController,
                                   stringaTrue: widget.sensor.stringaTrue,
                                   stringaFalse: widget.sensor.stringaFalse,
-                                  addNotifica: (String nome, bool benchmark) async {
+                                  addNotifica:
+                                      (String nome, bool benchmark) async {
                                     try {
-                                      String res = await addBinaryNotify(widget.sensor.id.toString(), nome, benchmark, _token!);
-                                      Utils.showSnackBar(super.context, 'NOTIFICA AGGIUNTA', res, false);
+                                      String res = await addBinaryNotify(
+                                          widget.sensor.id.toString(),
+                                          nome,
+                                          benchmark,
+                                          _token!);
+                                      Utils.showSnackBar(super.context,
+                                          'NOTIFICA AGGIUNTA', res, false);
                                       initNotifiche();
                                     } on HttpException catch (e) {
-                                      await _prefs.clear();
-                                      Utils.showSnackBar(super.context, 'ERRORE', e.message, true);
+                                      await _prefs.remove('token');
+                                      await _prefs.remove('tipo');
+                                      Utils.showSnackBar(
+                                          context, 'ERRORE', e.message, true);
                                       Navigator.of(context).pushAndRemoveUntil(
                                           MaterialPageRoute(
-                                              builder: (context) => const LoginPage()),
-                                              (Route<dynamic> route) => false);
+                                              builder: (context) =>
+                                                  const LoginPage()),
+                                          (Route<dynamic> route) => false);
                                     } on Exception catch (e) {
-                                      Utils.showSnackBar(super.context, 'ERRORE', e.toString(), true);
+                                      Utils.showSnackBar(super.context,
+                                          'ERRORE', e.toString(), true);
                                     }
                                   },
                                 );
@@ -458,7 +512,13 @@ class NotifyDialog extends StatefulWidget {
   final String stringaTrue;
   final String stringaFalse;
   final void Function(String nome, bool benchmark) addNotifica;
-  const NotifyDialog({super.key, required this.valueController, required this.addNotifica, required this.nameController, required this.stringaTrue, required this.stringaFalse});
+  const NotifyDialog(
+      {super.key,
+      required this.valueController,
+      required this.addNotifica,
+      required this.nameController,
+      required this.stringaTrue,
+      required this.stringaFalse});
 
   @override
   State<NotifyDialog> createState() => _NotifyDialogState();
@@ -518,7 +578,9 @@ class _NotifyDialogState extends State<NotifyDialog> {
                         (item) {
                           return DropdownMenuItem(
                             value: item,
-                            child: Text(item == 'true' ? widget.stringaTrue : widget.stringaFalse),
+                            child: Text(item == 'true'
+                                ? widget.stringaTrue
+                                : widget.stringaFalse),
                           );
                         },
                       ).toList(),
@@ -539,7 +601,8 @@ class _NotifyDialogState extends State<NotifyDialog> {
             onPressed: () {
               if (_formKey.currentState!.validate()) {
                 Navigator.of(context).pop();
-                widget.addNotifica(widget.nameController.text, selectedValue! == 'true');
+                widget.addNotifica(
+                    widget.nameController.text, selectedValue! == 'true');
               }
             },
             child: const Text('Aggiungi'),
@@ -550,7 +613,6 @@ class _NotifyDialogState extends State<NotifyDialog> {
   }
 }
 
-
 class ConfirmDelete extends StatelessWidget {
   final VoidCallback onConfirm;
   const ConfirmDelete({super.key, required this.onConfirm});
@@ -559,8 +621,8 @@ class ConfirmDelete extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Center(
-          child: Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))
-      ),
+          child:
+              Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))),
       actions: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -569,12 +631,8 @@ class ConfirmDelete extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: const Text('Cancella')
-            ),
-            ElevatedButton(
-                onPressed: onConfirm,
-                child: const Text('Conferma')
-            ),
+                child: const Text('Cancella')),
+            ElevatedButton(onPressed: onConfirm, child: const Text('Conferma')),
           ],
         )
       ],

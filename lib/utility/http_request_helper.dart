@@ -4,7 +4,6 @@ import 'package:encrypt_shared_preferences/provider.dart';
 import 'package:http/http.dart' as http;
 
 class HttpRequestHelper {
-
   /*
     METODO HELPER PER RICHIESTE GET
     - Scopo: Esegue una richiesta HTTP GET all'endpoint specificato.
@@ -18,7 +17,8 @@ class HttpRequestHelper {
     EncryptedSharedPreferences prefs = EncryptedSharedPreferences.getInstance();
     String? baseUrl = prefs.getString('url');
     if (baseUrl != null) {
-      return await http.get(Uri.parse('$baseUrl$endpoint'),
+      return await http.get(
+        Uri.parse('$baseUrl$endpoint'),
         headers: auth != null ? {'authorization': 'Basic $auth'} : null,
       );
     } else {
@@ -35,7 +35,8 @@ class HttpRequestHelper {
       - auth (opzionale): La stringa di autenticazione di base da includere nelle intestazioni della richiesta.
     - Ritorno: Un oggetto Future<http.Response> contenente la risposta della richiesta.
   */
-  Future<http.Response> postRequest(String endpoint, [Map<String, dynamic>? body, String? auth]) async {
+  Future<http.Response> postRequest(String endpoint,
+      [Map<String, dynamic>? body, String? auth]) async {
     await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
     EncryptedSharedPreferences prefs = EncryptedSharedPreferences.getInstance();
     String? baseUrl = prefs.getString('url');
@@ -76,7 +77,9 @@ class HttpRequestHelper {
       - auth (opzionale): La stringa di autenticazione di base da includere nelle intestazioni della richiesta.
     - Ritorno: Un oggetto Future<http.Response> contenente la risposta della richiesta.
   */
-  Future<http.Response> deleteRequest(String endpoint, Map<String, dynamic> body, [String? auth]) async {
+  Future<http.Response> deleteRequest(
+      String endpoint, Map<String, dynamic> body,
+      [String? auth]) async {
     await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
     EncryptedSharedPreferences prefs = EncryptedSharedPreferences.getInstance();
     String? baseUrl = prefs.getString('url');

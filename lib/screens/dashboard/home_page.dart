@@ -40,13 +40,12 @@ class _HomePageState extends State<HomePage> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
-      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS',
+          'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
       return;
     }
 
@@ -78,12 +77,12 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } on HttpException catch (e) {
-      await _prefs.clear();
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     }
     await initOfflineNodes();
   }
@@ -95,8 +94,12 @@ class _HomePageState extends State<HomePage> {
         offlineNodes = tmpOfflineNodes;
       });
     } on HttpException catch (e) {
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
-      Navigator.of(context).pop();
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     }
   }
 
@@ -119,35 +122,45 @@ class _HomePageState extends State<HomePage> {
               Expanded(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 100),
-                  width: _isExpanded ? _userType == 'admin' ? 80 : 40 : 0,
+                  width: _isExpanded
+                      ? _userType == 'admin'
+                          ? 80
+                          : 40
+                      : 0,
                   child: ListView(
                       scrollDirection: Axis.horizontal,
                       shrinkWrap: true,
                       children: [
-                        if (_userType == 'admin') ... [Padding(
-                            padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
-                            child: FittedBox(child: IconButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
-                                },
-                                icon: const Icon(Icons.settings))
-                            )
-                        )],
+                        if (_userType == 'admin') ...[
+                          Padding(
+                              padding: const EdgeInsets.only(
+                                  top: 10, bottom: 10, right: 5),
+                              child: FittedBox(
+                                  child: IconButton(
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const SettingsPage()));
+                                      },
+                                      icon: const Icon(Icons.settings))))
+                        ],
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: FittedBox(child: IconButton(
-                              onPressed: () async {
-                                await _prefs.remove('token');
-                                await _prefs.remove('tipo');
-                                Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(
-                                        builder: (context) => const LoginPage()),
+                          child: FittedBox(
+                              child: IconButton(
+                                  onPressed: () async {
+                                    await _prefs.remove('token');
+                                    await _prefs.remove('tipo');
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const LoginPage()),
                                         (Route<dynamic> route) => false);
-                              },
-                              icon: const Icon(Icons.exit_to_app_rounded))),
+                                  },
+                                  icon: const Icon(Icons.exit_to_app_rounded))),
                         )
-                      ]
-                  ),
+                      ]),
                 ),
               )
             ],
@@ -170,7 +183,9 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                const Text('Menu', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                const Text('Menu',
+                    style:
+                        TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
                 if (!kIsWeb && _userType == "admin") ...[
                   ElevatedButton(
                     onPressed: () {
@@ -183,12 +198,15 @@ class _HomePageState extends State<HomePage> {
                             try {
                               nodeData = json.decode(code!);
                             } on Exception catch (e) {
-                              Utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
+                              Utils.showSnackBar(
+                                  context, 'OPS', 'QR code non valido!', true);
                               return;
                             }
 
-                            if (nodeData['name'] == null || nodeData['pop'] == null) {
-                              Utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
+                            if (nodeData['name'] == null ||
+                                nodeData['pop'] == null) {
+                              Utils.showSnackBar(
+                                  context, 'OPS', 'QR code non valido!', true);
                               return;
                             } else {
                               BluetoothEnable.enableBluetooth.then((result) {
@@ -196,14 +214,16 @@ class _HomePageState extends State<HomePage> {
                                   showDialog(
                                     context: context,
                                     builder: (BuildContext context) {
-                                      return BleConnectionDialog(nodeData: nodeData);
+                                      return BleConnectionDialog(
+                                          nodeData: nodeData);
                                     },
                                   );
                                 }
                                 showDialog(
                                   context: context,
                                   builder: (BuildContext context) {
-                                    return BleConnectionDialog(nodeData: nodeData);
+                                    return BleConnectionDialog(
+                                        nodeData: nodeData);
                                   },
                                 );
                               });
@@ -228,11 +248,13 @@ class _HomePageState extends State<HomePage> {
                             onPressed: () {
                               Navigator.of(context).pushAndRemoveUntil(
                                   MaterialPageRoute(
-                                      builder: (context) => DettaglioAreaPage(area: userAreas[index])),
-                                      (Route<dynamic> route) => false);
+                                      builder: (context) => DettaglioAreaPage(
+                                          area: userAreas[index])),
+                                  (Route<dynamic> route) => false);
                             },
-                            child: ListTile(title: Center(child: Text(userAreas[index].nome)))
-                        ),
+                            child: ListTile(
+                                title: Center(
+                                    child: Text(userAreas[index].nome)))),
                       );
                     },
                   ),
@@ -256,37 +278,42 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     MyGenericListElement(
                       leading: const Icon(Icons.wifi_off_rounded),
-                      title: offlineNodes.isNotEmpty ? '${offlineNodes.length} Nodi Offline' : 'Tutti i nodi sono online o in stato sconosciuto',
+                      title: offlineNodes.isNotEmpty
+                          ? '${offlineNodes.length} Nodi Offline'
+                          : 'Tutti i nodi sono online o in stato sconosciuto',
                     ),
-                    if (offlineNodes.isNotEmpty) ... [ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxHeight: 600,
-                      ),
-                      child: Card(
-                        elevation: 10,
-                        child: Padding(
-                          padding: const EdgeInsets.all(25),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Expanded(
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: offlineNodes.length,
-                                  itemBuilder: (context, index) {
-                                    return MyGenericListElement(
-                                      title: offlineNodes[index]['node_name'],
-                                      subtitle: offlineNodes[index]['area_name'],
-                                      leading: const Icon(Icons.room),
-                                    );
-                                  },
+                    if (offlineNodes.isNotEmpty) ...[
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxHeight: 600,
+                        ),
+                        child: Card(
+                          elevation: 10,
+                          child: Padding(
+                            padding: const EdgeInsets.all(25),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Expanded(
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: offlineNodes.length,
+                                    itemBuilder: (context, index) {
+                                      return MyGenericListElement(
+                                        title: offlineNodes[index]['node_name'],
+                                        subtitle: offlineNodes[index]
+                                            ['area_name'],
+                                        leading: const Icon(Icons.room),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    )],
+                      )
+                    ],
                   ],
                 ),
               ),

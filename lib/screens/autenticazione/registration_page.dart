@@ -38,13 +38,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
-      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS',
+          'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
       return;
     }
 
@@ -72,13 +71,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
         centerTitle: true,
         title: const Text('Registrazione'),
       ),
-
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-                maxWidth: 500
-            ),
+            constraints: const BoxConstraints(maxWidth: 500),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: SingleChildScrollView(
@@ -89,11 +85,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text('Registra un nuovo utente', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                        const Text('Registra un nuovo utente',
+                            style: TextStyle(
+                                fontSize: 25, fontWeight: FontWeight.bold)),
                         Padding(
                           padding: const EdgeInsets.only(top: 30),
                           child: Form(
-                            key: _formKey,
+                              key: _formKey,
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -102,47 +100,45 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                         if (valore == null || valore.isEmpty) {
                                           return 'Inserisci un nome!';
                                         }
-                                        if(valore.length > 15) {
+                                        if (valore.length > 15) {
                                           return 'Massimo 20 caratteri!';
                                         }
                                         return null;
                                       },
                                       hint: 'Nome',
                                       controller: _nameController,
-                                      onlyNumbers: false
-                                  ),
+                                      onlyNumbers: false),
                                   MyTextField(
                                       validator: (valore) {
                                         if (valore == null || valore.isEmpty) {
                                           return 'Inserisci un cognome!';
                                         }
-                                        if(valore.length > 15) {
+                                        if (valore.length > 15) {
                                           return 'Massimo 20 caratteri!';
                                         }
                                         return null;
                                       },
                                       hint: 'Cognome',
                                       controller: _surnameController,
-                                      onlyNumbers: false
-                                  ),
+                                      onlyNumbers: false),
                                   MyTextField(
                                       validator: (valore) {
                                         if (valore == null || valore.isEmpty) {
                                           return 'Inserisci un contatto!';
                                         }
-                                        if(valore.length != 10) {
+                                        if (valore.length != 10) {
                                           return 'Inserisci un contatto valido!\n(10 cifre)';
                                         }
                                         return null;
                                       },
                                       hint: 'Contatto principale',
                                       controller: _firstNumberController,
-                                      onlyNumbers: true
-                                  ),
+                                      onlyNumbers: true),
                                   MyTextField(
                                       validator: (valore) {
-                                        if (valore != null && valore.isNotEmpty) {
-                                          if(valore.length != 10) {
+                                        if (valore != null &&
+                                            valore.isNotEmpty) {
+                                          if (valore.length != 10) {
                                             return 'Inserisci un contatto valido!\n(10 cifre)';
                                           }
                                         }
@@ -150,8 +146,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                       },
                                       hint: 'Contatto secondario (Opzionale)',
                                       controller: _secondNumberController,
-                                      onlyNumbers: true
-                                  ),
+                                      onlyNumbers: true),
                                   MyTextField(
                                       validator: (valore) {
                                         if (valore == null || valore.isEmpty) {
@@ -164,8 +159,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                       },
                                       hint: 'E-Mail',
                                       controller: _mailController,
-                                      onlyNumbers: false
-                                  ),
+                                      onlyNumbers: false),
                                   TextFormField(
                                       validator: (valore) {
                                         if (valore == null || valore.isEmpty) {
@@ -178,18 +172,21 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                         labelText: 'Password',
                                         suffixIcon: IconButton(
                                             onPressed: () => setState(() {
-                                              _isObscured = !_isObscured;
-                                            }),
-                                            icon: _isObscured ? const Icon(Icons.visibility_off) : const Icon(Icons.visibility)
-                                        ),
+                                                  _isObscured = !_isObscured;
+                                                }),
+                                            icon: _isObscured
+                                                ? const Icon(
+                                                    Icons.visibility_off)
+                                                : const Icon(Icons.visibility)),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                       ),
-                                      controller: _passwordController
-                                  ),
+                                      controller: _passwordController),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
@@ -200,14 +197,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                               setState(() {
                                                 _isAdmin = value;
                                               });
-                                            }
-                                        ),
+                                            }),
                                       ],
                                     ),
                                   )
                                 ],
-                              )
-                          ),
+                              )),
                         ),
                         Padding(
                           padding: const EdgeInsets.only(top: 10),
@@ -215,33 +210,51 @@ class _RegistrationPageState extends State<RegistrationPage> {
                               onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
                                   try {
-                                    String res = await register(_token!, _nameController.text, _surnameController.text, int.parse(_firstNumberController.text), _secondNumberController.text.isEmpty ? null:int.parse(_secondNumberController.text), _mailController.text, _passwordController.text, _isAdmin ? 'admin':'user');
-                                    Utils.showSnackBar(context, 'REGISTRAZIONE EFFETTUATA', res, false);
-                                    Navigator.of(
-                                        context)
-                                        .pushAndRemoveUntil(
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                            const HomePage()),
-                                            (Route<dynamic> route) =>
-                                        false);
-                                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
-                                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const UsersManagePage()));
-                                  } on HttpException catch (e){
-                                    await _prefs.clear();
-                                    Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                                    String res = await register(
+                                        _token!,
+                                        _nameController.text,
+                                        _surnameController.text,
+                                        int.parse(_firstNumberController.text),
+                                        _secondNumberController.text.isEmpty
+                                            ? null
+                                            : int.parse(
+                                                _secondNumberController.text),
+                                        _mailController.text,
+                                        _passwordController.text,
+                                        _isAdmin ? 'admin' : 'user');
+                                    Utils.showSnackBar(context,
+                                        'REGISTRAZIONE EFFETTUATA', res, false);
                                     Navigator.of(context).pushAndRemoveUntil(
                                         MaterialPageRoute(
-                                            builder: (context) => const LoginPage()),
-                                            (Route<dynamic> route) => false);
+                                            builder: (context) =>
+                                                const HomePage()),
+                                        (Route<dynamic> route) => false);
+                                    Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const SettingsPage()));
+                                    Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const UsersManagePage()));
+                                  } on HttpException catch (e) {
+                                    await _prefs.remove('token');
+                                    await _prefs.remove('tipo');
+                                    Utils.showSnackBar(
+                                        context, 'ERRORE', e.message, true);
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const LoginPage()),
+                                        (Route<dynamic> route) => false);
                                   } on Exception catch (e) {
-                                    Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                    Utils.showSnackBar(
+                                        context, 'ERRORE', e.toString(), true);
                                     return;
                                   }
                                 }
                               },
-                              child: const Text('Registra')
-                          ),
+                              child: const Text('Registra')),
                         )
                       ],
                     ),

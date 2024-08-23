@@ -7,7 +7,11 @@ class NodeInitPage extends StatefulWidget {
   final Map<String, dynamic> deviceInfos;
   final String nodeArea;
 
-  const NodeInitPage({super.key, required this.nodeData, required this.deviceInfos, required this.nodeArea});
+  const NodeInitPage(
+      {super.key,
+      required this.nodeData,
+      required this.deviceInfos,
+      required this.nodeArea});
 
   @override
   State<NodeInitPage> createState() => _NodeInitPageState();
@@ -29,7 +33,6 @@ class _NodeInitPageState extends State<NodeInitPage> {
           ],
         ),
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -46,15 +49,24 @@ class _NodeInitPageState extends State<NodeInitPage> {
                       child: Text('Dai un nome al nodo'),
                     ),
                     Form(
-                      key: _formKey,
-                        child: MyTextField(hint: widget.nodeData['name'], controller: _nodeNameController, onlyNumbers: false)
-                    ),
+                        key: _formKey,
+                        child: MyTextField(
+                            hint: widget.nodeData['name'],
+                            controller: _nodeNameController,
+                            onlyNumbers: false)),
                     ElevatedButton(
                       onPressed: () {
-                        if(_formKey.currentState!.validate()) {
+                        if (_formKey.currentState!.validate()) {
                           Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (context) => SensorsInitPage(nodeData: widget.nodeData, deviceInfos: widget.deviceInfos,  nodeName: _nodeNameController.text == '' ? widget.nodeData['name'] : _nodeNameController.text, nodeArea: widget.nodeArea)),
-                                  (Route<dynamic> route) => false);
+                              MaterialPageRoute(
+                                  builder: (context) => SensorsInitPage(
+                                      nodeData: widget.nodeData,
+                                      deviceInfos: widget.deviceInfos,
+                                      nodeName: _nodeNameController.text == ''
+                                          ? widget.nodeData['name']
+                                          : _nodeNameController.text,
+                                      nodeArea: widget.nodeArea)),
+                              (Route<dynamic> route) => false);
                         }
                       },
                       child: const Text('Continua'),

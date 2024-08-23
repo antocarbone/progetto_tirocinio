@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
+import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/foundation.dart';
@@ -97,7 +98,10 @@ class _NodeStatusHistoryState extends State<NodeStatusHistory> {
       });
     } on HttpException catch (e) {
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
-      Navigator.of(context).pop();
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false);
     }
   }
 

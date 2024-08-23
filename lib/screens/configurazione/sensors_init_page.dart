@@ -12,8 +12,12 @@ class SensorsInitPage extends StatefulWidget {
   final String nodeName;
   final String nodeArea;
 
-
-  const SensorsInitPage({super.key, required this.nodeData, required this.deviceInfos, required this.nodeName, required this.nodeArea});
+  const SensorsInitPage(
+      {super.key,
+      required this.nodeData,
+      required this.deviceInfos,
+      required this.nodeName,
+      required this.nodeArea});
 
   @override
   State<SensorsInitPage> createState() => _SensorsInitPageState();
@@ -28,14 +32,17 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
 
   final _flutterEspBleProvPlugin = FlutterEspBleProv();
 
-  Future<Map<String, dynamic>?> getDeviceInfos(String name, String pop, int index, int operation) async {
+  Future<Map<String, dynamic>?> getDeviceInfos(
+      String name, String pop, int index, int operation) async {
     String? res;
     try {
-      res = await _flutterEspBleProvPlugin.sendCustomData(
-          'get-device-info', '{"index":$index,"operation":$operation}', name, pop);
+      res = await _flutterEspBleProvPlugin.sendCustomData('get-device-info',
+          '{"index":$index,"operation":$operation}', name, pop);
       if (res != null) {
         Map<String, dynamic> resJson = jsonDecode(res);
-        if (resJson['status'] == 'success' && _checkJsonDeviceInfo(resJson, operation == 1 ? 'sensor' : 'binary_sensor')) {
+        if (resJson['status'] == 'success' &&
+            _checkJsonDeviceInfo(
+                resJson, operation == 1 ? 'sensor' : 'binary_sensor')) {
           return resJson;
         } else {
           return null;
@@ -49,25 +56,37 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
   }
 
   void initSensors() async {
-    for(int i = 0; i < widget.deviceInfos['num_of_sensors']; i++) {
-      Map<String, dynamic>? sensorsInfo = await getDeviceInfos(widget.nodeData['name'], widget.nodeData['pop'], i, 1);
+    for (int i = 0; i < widget.deviceInfos['num_of_sensors']; i++) {
+      Map<String, dynamic>? sensorsInfo = await getDeviceInfos(
+          widget.nodeData['name'], widget.nodeData['pop'], i, 1);
       if (sensorsInfo != null) {
         setState(() {
-          sensors.add({'sens_name': sensorsInfo['topic_suffix'], 'topic': sensorsInfo['topic_suffix'], 'unit': sensorsInfo['type_of_measurement']});
+          sensors.add({
+            'sens_name': sensorsInfo['topic_suffix'],
+            'topic': sensorsInfo['topic_suffix'],
+            'unit': sensorsInfo['type_of_measurement']
+          });
         });
       } else {
-        Utils.showSnackBar(context, 'ERRORE', 'si è verificato un problema nei dati dei sensori', true);
+        Utils.showSnackBar(context, 'ERRORE',
+            'si è verificato un problema nei dati dei sensori', true);
       }
     }
 
-    for(int i = 0; i < widget.deviceInfos['num_of_binary_sensors']; i++) {
-      Map<String, dynamic>? binarySensorsInfo = await getDeviceInfos(widget.nodeData['name'], widget.nodeData['pop'], i, 2);
+    for (int i = 0; i < widget.deviceInfos['num_of_binary_sensors']; i++) {
+      Map<String, dynamic>? binarySensorsInfo = await getDeviceInfos(
+          widget.nodeData['name'], widget.nodeData['pop'], i, 2);
       if (binarySensorsInfo != null) {
         setState(() {
-          binarySensors.add({'sens_name': binarySensorsInfo['topic_suffix'], 'topic': binarySensorsInfo['topic_suffix'], 'device_class': binarySensorsInfo['device_class']});
+          binarySensors.add({
+            'sens_name': binarySensorsInfo['topic_suffix'],
+            'topic': binarySensorsInfo['topic_suffix'],
+            'device_class': binarySensorsInfo['device_class']
+          });
         });
       } else {
-        Utils.showSnackBar(context, 'ERRORE', 'si è verificato un problema nei dati sei sensori binari', true);
+        Utils.showSnackBar(context, 'ERRORE',
+            'si è verificato un problema nei dati sei sensori binari', true);
       }
     }
   }
@@ -77,8 +96,12 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
     super.initState();
     initSensors();
     setState(() {
-      sensorsControllers = List<TextEditingController>.generate(widget.deviceInfos['num_of_sensors'], (index) => TextEditingController());
-      binarySensorsControllers = List<TextEditingController>.generate(widget.deviceInfos['num_of_binary_sensors'], (index) => TextEditingController());
+      sensorsControllers = List<TextEditingController>.generate(
+          widget.deviceInfos['num_of_sensors'],
+          (index) => TextEditingController());
+      binarySensorsControllers = List<TextEditingController>.generate(
+          widget.deviceInfos['num_of_binary_sensors'],
+          (index) => TextEditingController());
     });
   }
 
@@ -94,7 +117,6 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
           ],
         ),
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -108,7 +130,9 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                   children: [
                     const Padding(
                       padding: EdgeInsets.only(bottom: 20),
-                      child: Text('Dai un nome ai sensori del nodo', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      child: Text('Dai un nome ai sensori del nodo',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
                     ),
                     Form(
                       key: _formKey,
@@ -121,7 +145,10 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                           ListView.builder(
                             itemCount: sensors.length,
                             itemBuilder: (context, i) {
-                              return MyTextField(hint: sensors[i]['sens_name'], controller: sensorsControllers[i], onlyNumbers: false);
+                              return MyTextField(
+                                  hint: sensors[i]['sens_name'],
+                                  controller: sensorsControllers[i],
+                                  onlyNumbers: false);
                             },
                             shrinkWrap: true,
                           ),
@@ -133,7 +160,10 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                           ListView.builder(
                             itemCount: binarySensors.length,
                             itemBuilder: (context, i) {
-                              return MyTextField(hint: binarySensors[i]['sens_name'], controller: binarySensorsControllers[i], onlyNumbers: false);
+                              return MyTextField(
+                                  hint: binarySensors[i]['sens_name'],
+                                  controller: binarySensorsControllers[i],
+                                  onlyNumbers: false);
                             },
                             shrinkWrap: true,
                           ),
@@ -142,23 +172,34 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
                     ),
                     ElevatedButton(
                       onPressed: () {
-                          for(int i=0; i<sensorsControllers.length; i++){
-                            if (sensorsControllers[i].text.isNotEmpty) {
-                              setState(() {
-                                sensors[i]['name'] = sensorsControllers[i].text;
-                              });
-                            }
+                        for (int i = 0; i < sensorsControllers.length; i++) {
+                          if (sensorsControllers[i].text.isNotEmpty) {
+                            setState(() {
+                              sensors[i]['name'] = sensorsControllers[i].text;
+                            });
                           }
-                          for(int i=0; i<binarySensorsControllers.length; i++){
-                            if (binarySensorsControllers[i].text.isNotEmpty) {
-                              setState(() {
-                                binarySensors[i]['name'] = binarySensorsControllers[i].text;
-                              });
-                            }
+                        }
+                        for (int i = 0;
+                            i < binarySensorsControllers.length;
+                            i++) {
+                          if (binarySensorsControllers[i].text.isNotEmpty) {
+                            setState(() {
+                              binarySensors[i]['name'] =
+                                  binarySensorsControllers[i].text;
+                            });
                           }
-                          Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (context) => CommissioningPage(nodeData: widget.nodeData, uniqueDeviceId: widget.deviceInfos['unique_id'], nodeArea: widget.nodeArea, nodeName: widget.nodeName, sensors: sensors, binarySensors: binarySensors)),
-                                  (Route<dynamic> route) => false);
+                        }
+                        Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (context) => CommissioningPage(
+                                    nodeData: widget.nodeData,
+                                    uniqueDeviceId:
+                                        widget.deviceInfos['unique_id'],
+                                    nodeArea: widget.nodeArea,
+                                    nodeName: widget.nodeName,
+                                    sensors: sensors,
+                                    binarySensors: binarySensors)),
+                            (Route<dynamic> route) => false);
                       },
                       child: const Text('Continua'),
                     ),
@@ -175,24 +216,24 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
   @override
   void dispose() {
     super.dispose();
-    for(TextEditingController controller in sensorsControllers) {
+    for (TextEditingController controller in sensorsControllers) {
       controller.dispose();
     }
-    for(TextEditingController controller in binarySensorsControllers) {
+    for (TextEditingController controller in binarySensorsControllers) {
       controller.dispose();
     }
   }
 
   bool _checkJsonDeviceInfo(Map<String, dynamic>? jsonInfos, String type) {
     if (jsonInfos != null) {
-      if(type == 'sensor'){
+      if (type == 'sensor') {
         if (jsonInfos['topic_suffix'] != null &&
             jsonInfos['type_of_measurement'] != null) {
           return true;
         } else {
           return false;
         }
-      } else if(type=='binary_sensor') {
+      } else if (type == 'binary_sensor') {
         if (jsonInfos['topic_suffix'] != null &&
             jsonInfos['device_class'] != null) {
           return true;
@@ -206,5 +247,4 @@ class _SensorsInitPageState extends State<SensorsInitPage> {
       return false;
     }
   }
-
 }

@@ -11,7 +11,8 @@ class AreaAssignPage extends StatefulWidget {
   final Map<String, dynamic> nodeData;
   final Map<String, dynamic> deviceInfos;
 
-  const AreaAssignPage({super.key, required this.nodeData, required this.deviceInfos});
+  const AreaAssignPage(
+      {super.key, required this.nodeData, required this.deviceInfos});
 
   @override
   State<AreaAssignPage> createState() => _AreaAssignPageState();
@@ -29,13 +30,12 @@ class _AreaAssignPageState extends State<AreaAssignPage> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
-      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS',
+          'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
       return;
     }
 
@@ -60,12 +60,12 @@ class _AreaAssignPageState extends State<AreaAssignPage> {
         aree = tmp;
       });
     } on HttpException catch (e) {
-      await _prefs.clear();
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     }
   }
 
@@ -100,7 +100,8 @@ class _AreaAssignPageState extends State<AreaAssignPage> {
                   children: [
                     const Padding(
                       padding: EdgeInsets.only(bottom: 20),
-                      child: Text('Scegli l\'area alla quale assegnare il nodo'),
+                      child:
+                          Text('Scegli l\'area alla quale assegnare il nodo'),
                     ),
                     DropdownButton<String>(
                       value: selectedValue,
@@ -110,7 +111,7 @@ class _AreaAssignPageState extends State<AreaAssignPage> {
                         });
                       },
                       items: aree.map(
-                            (item) {
+                        (item) {
                           return DropdownMenuItem(
                             value: item.nome,
                             child: Text(item.nome),
@@ -131,7 +132,7 @@ class _AreaAssignPageState extends State<AreaAssignPage> {
                               nodeArea: selectedValue ?? aree[1].nome,
                             ),
                           ),
-                              (Route<dynamic> route) => false,
+                          (Route<dynamic> route) => false,
                         );
                       },
                       child: const Text('Continua'),

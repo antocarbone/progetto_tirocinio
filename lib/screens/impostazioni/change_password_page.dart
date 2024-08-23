@@ -29,13 +29,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
-      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS',
+          'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
       return;
     }
 
@@ -70,13 +69,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           ],
         ),
       ),
-
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-                maxWidth: 500
-            ),
+            constraints: const BoxConstraints(maxWidth: 500),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Card(
@@ -86,7 +82,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Modifica password', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                      const Text('Modifica password',
+                          style: TextStyle(
+                              fontSize: 25, fontWeight: FontWeight.bold)),
                       Padding(
                         padding: const EdgeInsets.only(top: 30),
                         child: Form(
@@ -95,7 +93,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 10),
                                   child: TextFormField(
                                       validator: (valore) {
                                         if (valore == null || valore.isEmpty) {
@@ -107,11 +106,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                       decoration: InputDecoration(
                                         labelText: 'Password',
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                       ),
-                                      controller: _passwordController
-                                  ),
+                                      controller: _passwordController),
                                 ),
                                 TextFormField(
                                     validator: (valore) {
@@ -130,11 +129,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                    controller: _confirmController
-                                ),
+                                    controller: _confirmController),
                               ],
-                            )
-                        ),
+                            )),
                       ),
                       Center(
                         child: Padding(
@@ -143,24 +140,30 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                               onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
                                   try {
-                                    String res = await changePassword(_token!, widget.utente?.mail, _passwordController.text);
-                                    Utils.showSnackBar(context, 'PASSWORD MODIFICATA', res, false);
+                                    String res = await changePassword(
+                                        _token!,
+                                        widget.utente?.mail,
+                                        _passwordController.text);
+                                    Utils.showSnackBar(context,
+                                        'PASSWORD MODIFICATA', res, false);
                                     Navigator.of(context).pop();
                                   } on HttpException catch (e) {
-                                    await _prefs.clear();
-                                    Utils.showSnackBar(context, 'ERRORE', e.message, true);
+                                    await _prefs.remove('token');
+                                    await _prefs.remove('tipo');
+                                    Utils.showSnackBar(
+                                        context, 'ERRORE', e.message, true);
                                     Navigator.of(context).pushAndRemoveUntil(
                                         MaterialPageRoute(
-                                            builder: (context) => const LoginPage()),
-                                            (Route<dynamic> route) => false);
+                                            builder: (context) =>
+                                                const LoginPage()),
+                                        (Route<dynamic> route) => false);
                                   } on Exception catch (e) {
-                                    Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
-                                    Navigator.of(context).pop();
+                                    Utils.showSnackBar(
+                                        context, 'ERRORE', e.toString(), true);
                                   }
                                 }
                               },
-                              child: const Text('Conferma')
-                          ),
+                              child: const Text('Conferma')),
                         ),
                       )
                     ],

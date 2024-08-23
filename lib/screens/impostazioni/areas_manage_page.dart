@@ -27,13 +27,12 @@ class _AreasManagePageState extends State<AreasManagePage> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
-      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS',
+          'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
       return;
     }
 
@@ -59,12 +58,12 @@ class _AreasManagePageState extends State<AreasManagePage> {
         isAreasInit = true;
       });
     } on HttpException catch (e) {
-      await _prefs.clear();
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     }
   }
 
@@ -90,63 +89,72 @@ class _AreasManagePageState extends State<AreasManagePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  if (!isAreasInit ) ... [
+                  if (!isAreasInit) ...[
                     const CircularProgressIndicator()
-                  ] else if(aree.isNotEmpty) ... [const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 10),
-                    child: Center(
-                        child: Text('Le tue aree',
-                            style: TextStyle(
-                                fontSize: 25, fontWeight: FontWeight.bold))),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: aree.length,
-                      itemBuilder: (context, index) {
-                        return MyGenericListElement(
-                          leading: const Icon(Icons.room),
-                          title: aree[index].nome,
-                          trailing: IconButton(
-                            onPressed: () {
-                              showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return ConfirmDelete(onConfirm: () async {
-                                      try {
-                                        String res = await deleteArea(aree[index].nome, _token!);
-                                        Utils.showSnackBar(context, 'AREA ELIMINATA', res, false);
-                                        Navigator.of(context).pop();
-                                        initAreas();
-                                      } on HttpException catch (e) {
-                                        await _prefs.clear();
-                                        Utils.showSnackBar(context, 'ERRORE', e.message, true);
-                                        Navigator.of(context).pushAndRemoveUntil(
-                                            MaterialPageRoute(
-                                                builder: (context) => const LoginPage()),
-                                                (Route<dynamic> route) => false);
-                                      } on Exception catch (e) {
-                                        Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
-                                        Navigator.of(context).pop();
-                                      }
-                                    });
-                                  }
-                              );
-                            },
-                            icon: const Icon(Icons.delete_rounded),
-                          ),
-                        );
-                      },
+                  ] else if (aree.isNotEmpty) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Center(
+                          child: Text('Le tue aree',
+                              style: TextStyle(
+                                  fontSize: 25, fontWeight: FontWeight.bold))),
                     ),
-                  )] else ... [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: aree.length,
+                        itemBuilder: (context, index) {
+                          return MyGenericListElement(
+                            leading: const Icon(Icons.room),
+                            title: aree[index].nome,
+                            trailing: IconButton(
+                              onPressed: () {
+                                showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return ConfirmDelete(onConfirm: () async {
+                                        try {
+                                          String res = await deleteArea(
+                                              aree[index].nome, _token!);
+                                          Utils.showSnackBar(context,
+                                              'AREA ELIMINATA', res, false);
+                                          Navigator.of(context).pop();
+                                          initAreas();
+                                        } on HttpException catch (e) {
+                                          await _prefs.remove('token');
+                                          await _prefs.remove('tipo');
+                                          Utils.showSnackBar(context, 'ERRORE',
+                                              e.message, true);
+                                          Navigator.of(
+                                                  context)
+                                              .pushAndRemoveUntil(
+                                                  MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          const LoginPage()),
+                                                  (Route<dynamic> route) =>
+                                                      false);
+                                        } on Exception catch (e) {
+                                          Utils.showSnackBar(context, 'ERRORE',
+                                              e.toString(), true);
+                                          Navigator.of(context).pop();
+                                        }
+                                      });
+                                    });
+                              },
+                              icon: const Icon(Icons.delete_rounded),
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  ] else ...[
                     const Center(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 5),
-                          child: Text('Non sono presenti aree'),
-                        )
-                    )
+                      padding: EdgeInsets.symmetric(vertical: 5),
+                      child: Text('Non sono presenti aree'),
+                    ))
                   ],
                   Center(
                     child: ElevatedButton(
@@ -189,7 +197,12 @@ class AddAreaDialog extends StatefulWidget {
   final VoidCallback addArea;
   final String token;
   final EncryptedSharedPreferences prefs;
-  const AddAreaDialog({super.key, required this.valueController, required this.addArea, required this.token, required this.prefs});
+  const AddAreaDialog(
+      {super.key,
+      required this.valueController,
+      required this.addArea,
+      required this.token,
+      required this.prefs});
 
   @override
   State<AddAreaDialog> createState() => _AddAreaDialogState();
@@ -218,7 +231,7 @@ class _AddAreaDialogState extends State<AddAreaDialog> {
                     if (valore == null || valore.isEmpty) {
                       return 'Inserisci un nome!';
                     }
-                    if(valore.length > 20) {
+                    if (valore.length > 20) {
                       return 'Massimo 20 caratteri!';
                     }
                     return null;
@@ -238,15 +251,17 @@ class _AddAreaDialogState extends State<AddAreaDialog> {
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
                 try {
-                  String res = await addArea(widget.valueController.text  , widget.token);
+                  String res =
+                      await addArea(widget.valueController.text, widget.token);
                   Utils.showSnackBar(context, 'AREA AGGIUNTA', res, false);
                 } on HttpException catch (e) {
-                  await widget.prefs.clear();
+                  await widget.prefs.remove('token');
+                  await widget.prefs.remove('tipo');
                   Utils.showSnackBar(context, 'ERRORE', e.message, true);
                   Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(
                           builder: (context) => const LoginPage()),
-                          (Route<dynamic> route) => false);
+                      (Route<dynamic> route) => false);
                 } on Exception catch (e) {
                   Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
                 }
@@ -270,8 +285,8 @@ class ConfirmDelete extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Center(
-          child: Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))
-      ),
+          child:
+              Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))),
       actions: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -280,12 +295,8 @@ class ConfirmDelete extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: const Text('Cancella')
-            ),
-            ElevatedButton(
-                onPressed: onConfirm,
-                child: const Text('Conferma')
-            ),
+                child: const Text('Cancella')),
+            ElevatedButton(onPressed: onConfirm, child: const Text('Conferma')),
           ],
         )
       ],

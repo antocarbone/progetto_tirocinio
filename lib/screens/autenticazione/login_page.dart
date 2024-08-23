@@ -28,7 +28,11 @@ class _LoginPageState extends State<LoginPage> {
         _prefs = tmp;
       });
     } catch (e) {
-      Utils.showSnackBar(context, 'ERRORE', 'Errore durante l\'inizializzazione delle preferenze crittografate: $e', true);
+      Utils.showSnackBar(
+          context,
+          'ERRORE',
+          'Errore durante l\'inizializzazione delle preferenze crittografate: $e',
+          true);
     }
   }
 
@@ -50,13 +54,10 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
       ),
-
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 500
-            ),
+            constraints: const BoxConstraints(maxWidth: 500),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Card(
@@ -66,15 +67,17 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Accedi', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                      const Text('Accedi',
+                          style: TextStyle(
+                              fontSize: 25, fontWeight: FontWeight.bold)),
                       Padding(
                         padding: const EdgeInsets.only(top: 30),
                         child: Form(
-                          key: _formKey,
+                            key: _formKey,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                  MyTextField(
+                                MyTextField(
                                     validator: (valore) {
                                       if (valore == null || valore.isEmpty) {
                                         return 'Inserisci una mail!';
@@ -86,33 +89,31 @@ class _LoginPageState extends State<LoginPage> {
                                     },
                                     hint: 'E-Mail',
                                     controller: _mailController,
-                                    onlyNumbers: false
-                                ),
+                                    onlyNumbers: false),
                                 TextFormField(
-                                  validator: (valore) {
-                                    if (valore == null || valore.isEmpty) {
-                                      return 'Inserisci una password!';
-                                    }
-                                    return null;
-                                  },
-                                  obscureText: _isObscured,
+                                    validator: (valore) {
+                                      if (valore == null || valore.isEmpty) {
+                                        return 'Inserisci una password!';
+                                      }
+                                      return null;
+                                    },
+                                    obscureText: _isObscured,
                                     decoration: InputDecoration(
                                       labelText: 'Password',
                                       suffixIcon: IconButton(
                                           onPressed: () => setState(() {
-                                            _isObscured = !_isObscured;
-                                          }),
-                                          icon: _isObscured ? const Icon(Icons.visibility_off) : const Icon(Icons.visibility)
-                                      ),
+                                                _isObscured = !_isObscured;
+                                              }),
+                                          icon: _isObscured
+                                              ? const Icon(Icons.visibility_off)
+                                              : const Icon(Icons.visibility)),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                    controller: _passwordController
-                                ),
+                                    controller: _passwordController),
                               ],
-                            )
-                        ),
+                            )),
                       ),
                       Center(
                         child: Padding(
@@ -121,25 +122,29 @@ class _LoginPageState extends State<LoginPage> {
                               onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
                                   try {
-                                    AuthUser loginData = await logIn(_mailController.text, _passwordController.text);
-                                    if(await _prefs.setString('token', loginData.token, notify: false) && await _prefs.setString('tipo', loginData.isAdmin, notify: false)) {
-                                      Navigator.of(
-                                          context)
-                                          .pushAndRemoveUntil(
+                                    AuthUser loginData = await logIn(
+                                        _mailController.text,
+                                        _passwordController.text);
+                                    if (await _prefs.setString(
+                                            'token', loginData.token,
+                                            notify: false) &&
+                                        await _prefs.setString(
+                                            'tipo', loginData.isAdmin,
+                                            notify: false)) {
+                                      Navigator.of(context).pushAndRemoveUntil(
                                           MaterialPageRoute(
                                               builder: (context) =>
-                                              const HomePage()),
-                                              (Route<dynamic> route) =>
-                                          false);
+                                                  const HomePage()),
+                                          (Route<dynamic> route) => false);
                                     }
                                   } on Exception catch (e) {
-                                    Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                    Utils.showSnackBar(
+                                        context, 'ERRORE', e.toString(), true);
                                     return;
                                   }
                                 }
                               },
-                              child: const Text('LogIn')
-                          ),
+                              child: const Text('LogIn')),
                         ),
                       )
                     ],

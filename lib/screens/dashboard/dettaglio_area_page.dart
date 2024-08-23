@@ -47,11 +47,11 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
     } on Exception catch (e) {
-      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS',
+          'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
       return;
     }
 
@@ -84,12 +84,12 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
         });
       }
     } on HttpException catch (e) {
-      await _prefs.clear();
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     }
     initAreaNodes();
   }
@@ -103,12 +103,12 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
         });
       }
     } on HttpException catch (e) {
-      await _prefs.clear();
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     }
     initNodeSensors();
   }
@@ -116,7 +116,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
   void initNodeSensors() async {
     List<Map<String, dynamic>> tmpNodeSensors = [];
     try {
-      for(Nodo nodo in areaNodes) {
+      for (Nodo nodo in areaNodes) {
         tmpNodeSensors.add(await getAllNodeSensors(nodo.id, _token!));
       }
       if (mounted) {
@@ -126,12 +126,12 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
         });
       }
     } on HttpException catch (e) {
-      await _prefs.clear();
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     }
   }
 
@@ -154,35 +154,45 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
               Expanded(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 100),
-                  width: _isExpanded ? isPrefsInit && _userType == 'admin' ? 80 : 40 : 0,
+                  width: _isExpanded
+                      ? isPrefsInit && _userType == 'admin'
+                          ? 80
+                          : 40
+                      : 0,
                   child: ListView(
                       scrollDirection: Axis.horizontal,
                       shrinkWrap: true,
                       children: [
-                        if (_userType == 'admin') ... [Padding(
-                            padding: const EdgeInsets.only(top: 10, bottom: 10, right: 5),
-                            child: FittedBox(child: IconButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsPage()));
-                                },
-                                icon: const Icon(Icons.settings))
-                            )
-                        )],
+                        if (_userType == 'admin') ...[
+                          Padding(
+                              padding: const EdgeInsets.only(
+                                  top: 10, bottom: 10, right: 5),
+                              child: FittedBox(
+                                  child: IconButton(
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const SettingsPage()));
+                                      },
+                                      icon: const Icon(Icons.settings))))
+                        ],
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: FittedBox(child: IconButton(
-                              onPressed: () async {
-                                await _prefs.remove('token');
-                                await _prefs.remove('tipo');
-                                Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(
-                                        builder: (context) => const LoginPage()),
+                          child: FittedBox(
+                              child: IconButton(
+                                  onPressed: () async {
+                                    await _prefs.remove('token');
+                                    await _prefs.remove('tipo');
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const LoginPage()),
                                         (Route<dynamic> route) => false);
-                              },
-                              icon: const Icon(Icons.exit_to_app_rounded))),
+                                  },
+                                  icon: const Icon(Icons.exit_to_app_rounded))),
                         )
-                      ]
-                  ),
+                      ]),
                 ),
               )
             ],
@@ -205,7 +215,9 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                const Text('Menu', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                const Text('Menu',
+                    style:
+                        TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
                 if (isPrefsInit && !kIsWeb && _userType == "admin") ...[
                   ElevatedButton(
                     onPressed: () {
@@ -218,12 +230,15 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                             try {
                               nodeData = json.decode(code!);
                             } catch (e) {
-                              Utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
+                              Utils.showSnackBar(
+                                  context, 'OPS', 'QR code non valido!', true);
                               return;
                             }
 
-                            if (nodeData['name'] == null || nodeData['pop'] == null) {
-                              Utils.showSnackBar(context, 'OPS', 'QR code non valido!', true);
+                            if (nodeData['name'] == null ||
+                                nodeData['pop'] == null) {
+                              Utils.showSnackBar(
+                                  context, 'OPS', 'QR code non valido!', true);
                               return;
                             } else {
                               BluetoothEnable.enableBluetooth.then((result) {
@@ -231,14 +246,16 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                                   showDialog(
                                     context: context,
                                     builder: (BuildContext context) {
-                                      return BleConnectionDialog(nodeData: nodeData);
+                                      return BleConnectionDialog(
+                                          nodeData: nodeData);
                                     },
                                   );
                                 }
                                 showDialog(
                                   context: context,
                                   builder: (BuildContext context) {
-                                    return BleConnectionDialog(nodeData: nodeData);
+                                    return BleConnectionDialog(
+                                        nodeData: nodeData);
                                   },
                                 );
                               });
@@ -248,7 +265,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                     child: const ListTile(
                         leading: Icon(Icons.qr_code_scanner_rounded),
                         title:
-                        FittedBox(child: Text('Aggiungi un dispositivo'))),
+                            FittedBox(child: Text('Aggiungi un dispositivo'))),
                   ),
                   const Divider(),
                 ],
@@ -257,10 +274,11 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                       Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(
                               builder: (context) => const HomePage()),
-                              (Route<dynamic> route) => false);
+                          (Route<dynamic> route) => false);
                     },
-                    child: const ListTile(leading: Icon(Icons.home), title: Center(child: Text('Home')))
-                ),
+                    child: const ListTile(
+                        leading: Icon(Icons.home),
+                        title: Center(child: Text('Home')))),
                 const Divider(),
                 Flexible(
                   flex: 6,
@@ -270,15 +288,18 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 5),
                         child: ElevatedButton(
-                            autofocus: (widget.area.nome == userAreas[index].nome),
+                            autofocus:
+                                (widget.area.nome == userAreas[index].nome),
                             onPressed: () {
                               Navigator.of(context).pushAndRemoveUntil(
                                   MaterialPageRoute(
-                                      builder: (context) => DettaglioAreaPage(area: userAreas[index])),
-                                      (Route<dynamic> route) => false);
+                                      builder: (context) => DettaglioAreaPage(
+                                          area: userAreas[index])),
+                                  (Route<dynamic> route) => false);
                             },
-                            child: ListTile(title: Center(child: Text(userAreas[index].nome)))
-                        ),
+                            child: ListTile(
+                                title: Center(
+                                    child: Text(userAreas[index].nome)))),
                       );
                     },
                   ),
@@ -292,42 +313,58 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Center(
-            child: !isNodesInit ? const CircularProgressIndicator() : areaNodes.isNotEmpty ? GridView.builder(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 1200,
-                  mainAxisExtent: kIsWeb ? 300 : 200,
-                  crossAxisSpacing: 5,
-                  mainAxisSpacing: 20
-              ),
-              itemCount: areaNodes.length,
-              itemBuilder: (context, index) => GridTile(
-                child: FittedBox(child: MyNodeSummary(
-                  nodo: areaNodes[index],
-                  sensors: nodeSensors.isEmpty ? [] : nodeSensors[index]['sensors'],
-                  binarySensors: nodeSensors.isEmpty ? [] : nodeSensors[index]['binary_sensors'],
-                  token: _token!,
-                  onCancel: () async {
-                    try {
-                      String res = await deleteNode(areaNodes[index].id, _token!);
-                      Utils.showSnackBar(context, 'NODO ELIMINATO', res, false);
-                      Navigator.of(context).pop();
-                      initAreaNodes();
-                    } on HttpException catch (e) {
-                      await _prefs.clear();
-                      Utils.showSnackBar(context, 'ERRORE', e.message, true);
-                      Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (context) => const LoginPage()),
-                              (Route<dynamic> route) => false);
-                    } on Exception catch (e) {
-                      Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
-                      Navigator.of(context).pop();
-                    }
-                  },
-                )
-                ),
-              ),
-            ) : const Text('Nessun nodo è collegato a quest\'area\nUsa la versione android dell\'app per aggiungerne uno', textAlign: TextAlign.center),
+            child: !isNodesInit
+                ? const CircularProgressIndicator()
+                : areaNodes.isNotEmpty
+                    ? GridView.builder(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 1200,
+                                mainAxisExtent: kIsWeb ? 300 : 200,
+                                crossAxisSpacing: 5,
+                                mainAxisSpacing: 20),
+                        itemCount: areaNodes.length,
+                        itemBuilder: (context, index) => GridTile(
+                          child: FittedBox(
+                              child: MyNodeSummary(
+                            nodo: areaNodes[index],
+                            sensors: nodeSensors.isEmpty
+                                ? []
+                                : nodeSensors[index]['sensors'],
+                            binarySensors: nodeSensors.isEmpty
+                                ? []
+                                : nodeSensors[index]['binary_sensors'],
+                            token: _token!,
+                            onCancel: () async {
+                              try {
+                                String res = await deleteNode(
+                                    areaNodes[index].id, _token!);
+                                Utils.showSnackBar(
+                                    context, 'NODO ELIMINATO', res, false);
+                                Navigator.of(context).pop();
+                                initAreaNodes();
+                              } on HttpException catch (e) {
+                                await _prefs.remove('token');
+                                await _prefs.remove('tipo');
+                                Utils.showSnackBar(
+                                    context, 'ERRORE', e.message, true);
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const LoginPage()),
+                                    (Route<dynamic> route) => false);
+                              } on Exception catch (e) {
+                                Utils.showSnackBar(
+                                    context, 'ERRORE', e.toString(), true);
+                                Navigator.of(context).pop();
+                              }
+                            },
+                          )),
+                        ),
+                      )
+                    : const Text(
+                        'Nessun nodo è collegato a quest\'area\nUsa la versione android dell\'app per aggiungerne uno',
+                        textAlign: TextAlign.center),
           ),
         ),
       ),

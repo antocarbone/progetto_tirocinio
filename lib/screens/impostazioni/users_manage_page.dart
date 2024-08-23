@@ -28,13 +28,12 @@ class _UsersManagePageState extends State<UsersManagePage> {
     try {
       await EncryptedSharedPreferences.initialize(Utils.encryptingKey);
       tmp = EncryptedSharedPreferences.getInstance();
-
     } on Exception catch (e) {
-      Utils.showSnackBar(context, 'OPS', 'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
+      Utils.showSnackBar(context, 'OPS',
+          'Qualcosa è andato storto, effettua nuovamente il login\n$e', true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
       return;
     }
 
@@ -58,12 +57,12 @@ class _UsersManagePageState extends State<UsersManagePage> {
         isUsersInit = true;
       });
     } on HttpException catch (e) {
-      await _prefs.clear();
+      await _prefs.remove('token');
+      await _prefs.remove('tipo');
       Utils.showSnackBar(context, 'ERRORE', e.message, true);
       Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()),
-              (Route<dynamic> route) => false);
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
     } on Exception catch (e) {
       Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
       return;
@@ -103,71 +102,98 @@ class _UsersManagePageState extends State<UsersManagePage> {
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          if (!isUsersInit) ... [
+                          if (!isUsersInit) ...[
                             const CircularProgressIndicator()
-                          ] else if (utenti.isNotEmpty) ... [Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 5),
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: utenti.length,
-                              itemBuilder: (context, index) {
-                                return GestureDetector(
-                                  onTap: () {
-                                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => UserDetailPage(utente: utenti[index])));
-                                  },
-                                  child: MyGenericListElement(
-                                    leading: const Icon(Icons.person),
-                                    title: '${utenti[index].nome} ${utenti[index].cognome}',
-                                    subtitle: utenti[index].mail,
-                                    trailing: IconButton(
-                                      onPressed: () {
+                          ] else if (utenti.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 5),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: utenti.length,
+                                itemBuilder: (context, index) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  UserDetailPage(
+                                                      utente: utenti[index])));
+                                    },
+                                    child: MyGenericListElement(
+                                      leading: const Icon(Icons.person),
+                                      title:
+                                          '${utenti[index].nome} ${utenti[index].cognome}',
+                                      subtitle: utenti[index].mail,
+                                      trailing: IconButton(
+                                        onPressed: () {
                                           showDialog(
                                               context: context,
                                               builder: (context) {
-                                                return ConfirmDelete(onConfirm: () async {
+                                                return ConfirmDelete(
+                                                    onConfirm: () async {
                                                   try {
-                                                    String res = await deleteUser(_token!, utenti[index].mail);
-                                                    Utils.showSnackBar(context, 'UTENTE ELIMINATO', res, false);
+                                                    String res =
+                                                        await deleteUser(
+                                                            _token!,
+                                                            utenti[index].mail);
+                                                    Utils.showSnackBar(
+                                                        context,
+                                                        'UTENTE ELIMINATO',
+                                                        res,
+                                                        false);
                                                     Navigator.of(context).pop();
-                                                    setState(() {utenti.removeAt(index);});
+                                                    setState(() {
+                                                      utenti.removeAt(index);
+                                                    });
                                                   } on HttpException catch (e) {
-                                                    await _prefs.clear();
-                                                    Utils.showSnackBar(context, 'ERRORE', e.message, true);
-                                                    Navigator.of(context).pushAndRemoveUntil(
-                                                        MaterialPageRoute(
-                                                            builder: (context) => const LoginPage()),
-                                                            (Route<dynamic> route) => false);
+                                                    await _prefs
+                                                        .remove('token');
+                                                    await _prefs.remove('tipo');
+                                                    Utils.showSnackBar(
+                                                        context,
+                                                        'ERRORE',
+                                                        e.message,
+                                                        true);
+                                                    Navigator.of(context)
+                                                        .pushAndRemoveUntil(
+                                                            MaterialPageRoute(
+                                                                builder:
+                                                                    (context) =>
+                                                                        const LoginPage()),
+                                                            (Route<dynamic>
+                                                                    route) =>
+                                                                false);
                                                   } on Exception catch (e) {
-                                                    Utils.showSnackBar(context, 'ERRORE', e.toString(), true);
+                                                    Utils.showSnackBar(
+                                                        context,
+                                                        'ERRORE',
+                                                        e.toString(),
+                                                        true);
                                                     Navigator.of(context).pop();
                                                   }
                                                 });
-                                              }
-                                          );
-                                      },
-                                      icon: const Icon(Icons.delete_rounded),
+                                              });
+                                        },
+                                        icon: const Icon(Icons.delete_rounded),
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
-                          )] else ... [
+                                  );
+                                },
+                              ),
+                            )
+                          ] else ...[
                             const Center(
                                 child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 5),
                               child: Text('Nessun utente registrato'),
-                                )
-                            )
+                            ))
                           ],
                           Center(
                             child: ElevatedButton(
                               onPressed: () {
-                                Navigator.of(
-                                    context)
-                                    .push(
-                                    MaterialPageRoute(
-                                        builder: (context) =>
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) =>
                                         const RegistrationPage()));
                               },
                               child: const Text('Registra un nuovo utente'),
@@ -195,8 +221,8 @@ class ConfirmDelete extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Center(
-          child: Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))
-      ),
+          child:
+              Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))),
       actions: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -205,12 +231,8 @@ class ConfirmDelete extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: const Text('Cancella')
-            ),
-            ElevatedButton(
-                onPressed: onConfirm,
-                child: const Text('Conferma')
-            ),
+                child: const Text('Cancella')),
+            ElevatedButton(onPressed: onConfirm, child: const Text('Conferma')),
           ],
         )
       ],

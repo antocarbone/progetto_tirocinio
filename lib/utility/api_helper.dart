@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:dashboard_tirocinio/utility/http_request_helper.dart';
@@ -11,7 +9,6 @@ import 'package:dashboard_tirocinio/utility/http_request_helper.dart';
 HttpRequestHelper requestHelper = HttpRequestHelper();
 DateFormat dateTimeFormatter = DateFormat('yyyy/MM/dd kk:mm');
 DateFormat historyDateFormatter = DateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'");
-
 
 /// ******************************************************************************
 /// GESTIONE ROTTE GENERICHE DI CONFIGURAZIONE
@@ -183,6 +180,35 @@ Future<String> changePassword(
   }
 }
 
+/*
+  METODO PER CAMBIARE LA MAIL
+  - Scopo: Cambia la mail dell'utente corrispondente alla mail, oppure se un admin
+    intende cambiare la propria invia solamente il token.
+  - Parametri:
+    - token: Il token di autenticazione.
+    - mail: L'email dell'utente (opzionale).
+    - newMail: La nuova mail.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
+Future<String> changeMail(String token, String? mail, String newMail) async {
+  Map<String, dynamic> body = {"new_email": newMail};
+  if (mail != null) {
+    body.addAll({"email": mail});
+  }
+  final response =
+      await requestHelper.postRequest('/users/change-email', body, token);
+
+  if (response.statusCode == 200) {
+    Map<String, dynamic> message = jsonDecode(response.body);
+    return message['message'];
+  } else if (response.statusCode == 401) {
+    throw const HttpException('Token Scaduto, esegui nuovamente il login');
+  } else {
+    Map<String, dynamic> error = jsonDecode(response.body);
+    throw Exception(error['error']);
+  }
+}
+
 /// ******************************************************************************
 /// GESTIONE DATI UTENTE
 
@@ -192,7 +218,8 @@ class User {
   final String nome;
   final String cognome;
 
-  User({required this.mail,
+  User(
+      {required this.mail,
       required this.contatti,
       required this.nome,
       required this.cognome});
@@ -209,7 +236,6 @@ class User {
     return User(mail: mail, contatti: contatti, nome: nome, cognome: cognome);
   }
 }
-
 
 /*
   METODO PER OTTENERE TUTTI GLI UTENTI
@@ -255,13 +281,12 @@ class Area {
 
   factory Area.fromJson(Map<String, dynamic> json) {
     String nome = json['area_name'];
-
     return Area(nome: nome);
   }
 
   @override
   bool operator ==(Object other) {
-    if(other is Area) {
+    if (other is Area) {
       return nome == other.nome;
     } else {
       return false;
@@ -269,8 +294,17 @@ class Area {
   }
 }
 
+/*
+  METODO PER AGGIUNGERE UNA NUOVA AREA
+  - Scopo: Aggiunge una nuova area specificata dall'utente.
+  - Parametri:
+    - nome: Il nome della nuova area.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente il messaggio di successo.
+*/
 Future<String> addArea(String nome, String token) async {
-  final response = await requestHelper.postRequest('/areas/', {"area_name":nome}, token);
+  final response =
+      await requestHelper.postRequest('/areas/', {"area_name": nome}, token);
 
   if (response.statusCode == 201) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -283,8 +317,17 @@ Future<String> addArea(String nome, String token) async {
   }
 }
 
+/*
+  METODO PER ELIMINARE UN'AREA
+  - Scopo: Elimina un'area esistente specificata dall'utente.
+  - Parametri:
+    - nome: Il nome dell'area da eliminare.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente il messaggio di successo.
+*/
 Future<String> deleteArea(String nome, String token) async {
-  final response = await requestHelper.deleteRequest('/areas/', {"area_name":nome}, token);
+  final response =
+      await requestHelper.deleteRequest('/areas/', {"area_name": nome}, token);
 
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -297,6 +340,13 @@ Future<String> deleteArea(String nome, String token) async {
   }
 }
 
+/*
+  METODO PER OTTENERE TUTTE LE AREE
+  - Scopo: Recupera una lista di tutte le aree esistenti.
+  - Parametri:
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<List<Area>> contenente la lista delle aree.
+*/
 Future<List<Area>> getAllAreas(String token) async {
   final response = await requestHelper.getRequest('/areas/', token);
 
@@ -304,7 +354,7 @@ Future<List<Area>> getAllAreas(String token) async {
 
   if (response.statusCode == 200) {
     Map<String, dynamic> json = jsonDecode(response.body);
-    for(String area in json["area_list"]) {
+    for (String area in json["area_list"]) {
       areas.add(Area(nome: area));
     }
     return areas;
@@ -316,19 +366,28 @@ Future<List<Area>> getAllAreas(String token) async {
   }
 }
 
+/*
+  METODO PER OTTENERE LE AREE ASSOCIATE A UN UTENTE
+  - Scopo: Recupera una lista di aree associate a un utente specifico o all'utente corrente.
+  - Parametri:
+    - token: Il token di autenticazione.
+    - mail (opzionale): L'indirizzo email dell'utente (se non specificato, verranno recuperate le aree dell'utente corrente).
+  - Ritorno: Un oggetto Future<List<Area>> contenente la lista delle aree associate all'utente.
+*/
 Future<List<Area>> getAllUserAreas(String token, [String? mail]) async {
   dynamic response;
   if (mail == null) {
     response = await requestHelper.postRequest('/areas/user', null, token);
   } else {
-    response = await requestHelper.postRequest('/areas/user', {"email":mail}, token);
+    response =
+        await requestHelper.postRequest('/areas/user', {"email": mail}, token);
   }
 
   List<Area> areas = [];
 
   if (response.statusCode == 200) {
     Map<String, dynamic> json = jsonDecode(response.body);
-    for(String area in json["area_list"]) {
+    for (String area in json["area_list"]) {
       areas.add(Area(nome: area));
     }
     return areas;
@@ -340,8 +399,19 @@ Future<List<Area>> getAllUserAreas(String token, [String? mail]) async {
   }
 }
 
-Future<String> updateUserAreas(String mail, List<String> aree, String token) async {
-  final response = await requestHelper.postRequest('/areas/user/update', {"email":mail, "area_list":aree}, token);
+/*
+  METODO PER AGGIORNARE LE AREE ASSOCIATE A UN UTENTE
+  - Scopo: Aggiorna la lista delle aree associate a un utente specifico.
+  - Parametri:
+    - mail: L'indirizzo email dell'utente.
+    - aree: La nuova lista di aree da associare all'utente.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente il messaggio di successo.
+*/
+Future<String> updateUserAreas(
+    String mail, List<String> aree, String token) async {
+  final response = await requestHelper.postRequest(
+      '/areas/user/update', {"email": mail, "area_list": aree}, token);
 
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -353,7 +423,6 @@ Future<String> updateUserAreas(String mail, List<String> aree, String token) asy
     throw Exception(error['error']);
   }
 }
-
 
 /// ******************************************************************************
 /// GESTIONE SENSORI
@@ -365,41 +434,29 @@ class Sensor {
   final double? lettura;
   final DateTime? dataLettura;
 
-  Sensor({
-    required this.id,
-    required this.nome,
-    required this.unitaMisura,
-    required this.lettura, 
-    required this.dataLettura
-  });
+  Sensor(
+      {required this.id,
+      required this.nome,
+      required this.unitaMisura,
+      required this.lettura,
+      required this.dataLettura});
 
   factory Sensor.fromJson(Map<String, dynamic> json) {
     final int id = json['id_sensor'];
     final String nome = json['sens_name'];
     final String unitaMisura = json['unit'];
-    final double? lettura = json['value'] == null ? null : double.parse(json['value']);
-    final DateTime? dataLettura = json['lecture_date'] == null ? null : historyDateFormatter.parseUtc(json['lecture_date']);
+    final double? lettura =
+        json['value'] == null ? null : double.parse(json['value']);
+    final DateTime? dataLettura = json['lecture_date'] == null
+        ? null
+        : historyDateFormatter.parseUtc(json['lecture_date']);
 
     return Sensor(
-        id: id, nome: nome, unitaMisura: unitaMisura, lettura: lettura, dataLettura: dataLettura);
-  }
-
-  MyGenericListElement toListElement() {
-    return MyGenericListElement(
-      leading: FittedBox(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            RadiusChart(chartData: [ChartData('', lettura)]),
-            Text(
-              '$lettura $unitaMisura',
-              style: const TextStyle(fontSize: 50, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-      title: nome,
-    );
+        id: id,
+        nome: nome,
+        unitaMisura: unitaMisura,
+        lettura: lettura,
+        dataLettura: dataLettura);
   }
 }
 
@@ -407,19 +464,13 @@ class SensorReading {
   final double value;
   final DateTime date;
 
-  SensorReading({
-    required this.value,
-    required this.date
-  });
+  SensorReading({required this.value, required this.date});
 
-  factory SensorReading.fromJson(Map<String, dynamic> json){
+  factory SensorReading.fromJson(Map<String, dynamic> json) {
     final double value = double.parse(json['value']);
     final DateTime date = historyDateFormatter.parseUtc(json['date']);
 
-    return SensorReading(
-        value: value,
-        date: date
-    );
+    return SensorReading(value: value, date: date);
   }
 }
 
@@ -430,24 +481,52 @@ class SensorReadingsHistory {
 
   factory SensorReadingsHistory.fromJson(List<dynamic> json) {
     List<SensorReading> readings = [];
-    for(final elem in json) {
+    for (final elem in json) {
       readings.add(SensorReading.fromJson(elem));
     }
     return SensorReadingsHistory(readings: readings);
   }
 
+  /*
+    METODO PER CONVERTIRE LE LETTURE DEL SENSORE IN PUNTI PER UN GRAFICO
+    - Scopo: Converte la lista di letture del sensore in una lista di FlSpot per la visualizzazione in un grafico.
+    - Parametri:
+      - start: Data di inizio dell'intervallo da considerare.
+      - end: Data di fine dell'intervallo da considerare.
+    - Ritorno: Una lista di FlSpot contenente i punti da tracciare.
+  */
   List<FlSpot> toSpotList(DateTime start, DateTime end) {
     List<FlSpot> out = [];
-    for(final elem in readings) {
-      out.add(FlSpot(elem.date.toUtc().millisecondsSinceEpoch/60000-start.toUtc().millisecondsSinceEpoch/60000, double.parse(elem.value.toStringAsFixed(2))));
+    for (final elem in readings) {
+      out.add(FlSpot(
+          elem.date.toUtc().millisecondsSinceEpoch / 60000 -
+              start.toUtc().millisecondsSinceEpoch / 60000,
+          double.parse(elem.value.toStringAsFixed(2))));
     }
     return out;
   }
 }
 
-
-Future<List<FlSpot>> getSensorReadings(int sensorId, DateTime start, DateTime end, String token) async {
-  final response = await requestHelper.postRequest('/areas/nodes/sensors/sensor_data', {"id_sensor":sensorId, "start":dateTimeFormatter.format(start), "end":dateTimeFormatter.format(end)}, token);
+/*
+  METODO PER OTTENERE LE LETTURE DI UN SENSORE IN UN INTERVALLO DI TEMPO
+  - Scopo: Recupera le letture di un sensore specifico all'interno di un determinato intervallo di tempo.
+  - Parametri:
+    - sensorId: ID del sensore di cui si vogliono ottenere le letture.
+    - start: Data di inizio dell'intervallo di tempo.
+    - end: Data di fine dell'intervallo di tempo.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<List<FlSpot>> contenente la lista dei punti da tracciare nel grafico.
+*/
+Future<List<FlSpot>> getSensorReadings(
+    int sensorId, DateTime start, DateTime end, String token) async {
+  final response = await requestHelper.postRequest(
+      '/areas/nodes/sensors/sensor_data',
+      {
+        "id_sensor": sensorId,
+        "start": dateTimeFormatter.format(start),
+        "end": dateTimeFormatter.format(end)
+      },
+      token);
 
   if (response.statusCode == 200) {
     final List<dynamic> json = jsonDecode(response.body);
@@ -474,18 +553,20 @@ class BinarySensor {
 
   BinarySensor(
       {required this.id,
-        required this.nome,
-        required this.valore,
-        required this.dataLettura,
-        required this.stringaTrue,
-        required this.stringaFalse,
-        required this.codiceIcona});
+      required this.nome,
+      required this.valore,
+      required this.dataLettura,
+      required this.stringaTrue,
+      required this.stringaFalse,
+      required this.codiceIcona});
 
   factory BinarySensor.fromJson(Map<String, dynamic> json) {
     final int id = json['id_bin_sensor'];
     final String nome = json['sens_name'];
     final bool? valore = json['value'];
-    final DateTime? dataLettura = json['lecture_date'] == null ? null : historyDateFormatter.parseUtc(json['lecture_date']);
+    final DateTime? dataLettura = json['lecture_date'] == null
+        ? null
+        : historyDateFormatter.parseUtc(json['lecture_date']);
     final String stringaTrue = json['true_string'];
     final String stringaFalse = json['false_string'];
     final String codiceIcona = json['icon'];
@@ -505,19 +586,13 @@ class BinarySensorReading {
   final bool value;
   final DateTime date;
 
-  BinarySensorReading({
-    required this.value,
-    required this.date
-  });
+  BinarySensorReading({required this.value, required this.date});
 
-  factory BinarySensorReading.fromJson(Map<String, dynamic> json){
+  factory BinarySensorReading.fromJson(Map<String, dynamic> json) {
     final bool value = json['value'];
     final DateTime date = historyDateFormatter.parseUtc(json['date']);
 
-    return BinarySensorReading(
-        value: value,
-        date: date
-    );
+    return BinarySensorReading(value: value, date: date);
   }
 }
 
@@ -528,15 +603,33 @@ class BinarySensorReadingsHistory {
 
   factory BinarySensorReadingsHistory.fromJson(List<dynamic> json) {
     List<BinarySensorReading> readings = [];
-    for(final elem in json) {
+    for (final elem in json) {
       readings.add(BinarySensorReading.fromJson(elem));
     }
     return BinarySensorReadingsHistory(readings: readings);
   }
 }
 
-Future<BinarySensorReadingsHistory> getBinarySensorReadings(int sensorId, DateTime start, DateTime end, String token) async {
-  final response = await requestHelper.postRequest('/areas/nodes/sensors/binary_sensor_data', {"id_bin_sensor":sensorId, "start":dateTimeFormatter.format(start), "end":dateTimeFormatter.format(end)}, token);
+/*
+  METODO PER OTTENERE LE LETTURE DI UN SENSORE BINARIO IN UN INTERVALLO DI TEMPO
+  - Scopo: Recupera le letture di un sensore binario specifico all'interno di un determinato intervallo di tempo.
+  - Parametri:
+    - sensorId: ID del sensore binario di cui si vogliono ottenere le letture.
+    - start: Data di inizio dell'intervallo di tempo.
+    - end: Data di fine dell'intervallo di tempo.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<BinarySensorReadingsHistory> contenente la cronologia delle letture.
+*/
+Future<BinarySensorReadingsHistory> getBinarySensorReadings(
+    int sensorId, DateTime start, DateTime end, String token) async {
+  final response = await requestHelper.postRequest(
+      '/areas/nodes/sensors/binary_sensor_data',
+      {
+        "id_bin_sensor": sensorId,
+        "start": dateTimeFormatter.format(start),
+        "end": dateTimeFormatter.format(end)
+      },
+      token);
 
   if (response.statusCode == 200) {
     final List<dynamic> json = jsonDecode(response.body);
@@ -559,21 +652,33 @@ class Nodo {
 
   Nodo({required this.id, required this.nome, required this.status});
 
+  /*
+    COSTRUTTORE FACTORY PER NODO
+    - Scopo: Crea un'istanza di Nodo a partire da un oggetto JSON.
+    - Parametri:
+      - json: Mappa contenente i dati del nodo.
+    - Ritorno: Un'istanza di Nodo.
+  */
   factory Nodo.fromJson(Map<String, dynamic> json) {
     final String id = json['id_node'];
     final String nome = json['node_name'];
     final String status = json['node_status'];
 
-    return Nodo(
-        id: id,
-        nome: nome,
-        status: status);
+    return Nodo(id: id, nome: nome, status: status);
   }
 }
 
+/*
+  METODO PER AGGIUNGERE UN NUOVO NODO
+  - Scopo: Aggiunge un nuovo nodo nell'area.
+  - Parametri:
+    - data: Mappa contenente i dati del nodo da aggiungere.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
 Future<String> addNode(Map<String, dynamic> data, String token) async {
-  print(data);
-  final response = await requestHelper.postRequest('/areas/nodes/new', data, token);
+  final response =
+      await requestHelper.postRequest('/areas/nodes/new', data, token);
 
   if (response.statusCode == 201) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -586,9 +691,17 @@ Future<String> addNode(Map<String, dynamic> data, String token) async {
   }
 }
 
-
+/*
+  METODO PER ELIMINARE UN NODO
+  - Scopo: Elimina un nodo specifico dall'area.
+  - Parametri:
+    - id: ID del nodo da eliminare.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
 Future<String> deleteNode(String id, String token) async {
-  final response = await requestHelper.deleteRequest('/areas/nodes/', {'id_node':id}, token);
+  final response = await requestHelper.deleteRequest(
+      '/areas/nodes/', {'id_node': id}, token);
 
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -601,21 +714,22 @@ Future<String> deleteNode(String id, String token) async {
   }
 }
 
-
 /*
   METODO PER OTTENERE TUTTI I NODI DELL'AREA
-  - Scopo: Recupera una lista di tutti i nodi di un'area.
+  - Scopo: Recupera una lista di tutti i nodi di un'area specifica.
   - Parametri:
-    - mail: L'email dell'utente.
-    - password: La password dell'utente.
-  - Ritorno: Un oggetto Future<List<Node>> contenente la lista dei nodi.
+    - nomeArea: Il nome dell'area di cui si vogliono ottenere i nodi.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<List<Nodo>> contenente la lista dei nodi.
 */
 Future<List<Nodo>> getAllAreaNodes(String nomeArea, String token) async {
-  final response = await requestHelper.postRequest('/areas/nodes/', {"area_name":nomeArea}, token);
+  final response = await requestHelper.postRequest(
+      '/areas/nodes/', {"area_name": nomeArea}, token);
 
   if (response.statusCode == 200) {
     final List<Nodo> nodes = [];
-    for (Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
+    for (Map<String, dynamic> element
+        in jsonDecode(response.body) as List<dynamic>) {
       Nodo nodo = Nodo.fromJson(element);
       nodes.add(nodo);
     }
@@ -628,8 +742,16 @@ Future<List<Nodo>> getAllAreaNodes(String nomeArea, String token) async {
   }
 }
 
+/*
+  METODO PER OTTENERE TUTTI I NODI OFFLINE DELL'UTENTE
+  - Scopo: Recupera una lista di tutti i nodi offline appartenenti all'utente.
+  - Parametri:
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<List<dynamic>> contenente la lista dei nodi offline.
+*/
 Future<List<dynamic>> getAllUserOfflineNodes(String token) async {
-  final response = await requestHelper.getRequest('/areas/nodes/offline', token);
+  final response =
+      await requestHelper.getRequest('/areas/nodes/offline', token);
 
   if (response.statusCode == 200) {
     return jsonDecode(response.body) as List<dynamic>;
@@ -641,8 +763,18 @@ Future<List<dynamic>> getAllUserOfflineNodes(String token) async {
   }
 }
 
-Future<Map<String, dynamic>> getAllNodeSensors(String nodeId, String token) async {
-  final response = await requestHelper.postRequest('/areas/nodes/sensors/', {"id_node":nodeId}, token);
+/*
+  METODO PER OTTENERE TUTTI I SENSORI ASSOCIATI A UN NODO
+  - Scopo: Recupera una lista di tutti i sensori (analogici e binari) associati a un nodo specifico.
+  - Parametri:
+    - nodeId: ID del nodo di cui si vogliono ottenere i sensori.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<Map<String, dynamic>> contenente le liste dei sensori analogici e binari.
+*/
+Future<Map<String, dynamic>> getAllNodeSensors(
+    String nodeId, String token) async {
+  final response = await requestHelper.postRequest(
+      '/areas/nodes/sensors/', {"id_node": nodeId}, token);
 
   if (response.statusCode == 200) {
     final List<Sensor> sensors = [];
@@ -654,7 +786,7 @@ Future<Map<String, dynamic>> getAllNodeSensors(String nodeId, String token) asyn
     for (Map<String, dynamic> binarySensor in json['binary_sensors']) {
       binarySensors.add(BinarySensor.fromJson(binarySensor));
     }
-    return {"sensors" : sensors, "binary_sensors" : binarySensors};
+    return {"sensors": sensors, "binary_sensors": binarySensors};
   } else if (response.statusCode == 401) {
     throw const HttpException('Token Scaduto, esegui nuovamente il login');
   } else {
@@ -663,36 +795,61 @@ Future<Map<String, dynamic>> getAllNodeSensors(String nodeId, String token) asyn
   }
 }
 
-
-
 class StatoNodo {
   final String id;
   final DateTime start;
   final DateTime? end;
   final String status;
 
-  StatoNodo({required this.id, required this.start, required this.end, required this.status});
+  StatoNodo(
+      {required this.id,
+      required this.start,
+      required this.end,
+      required this.status});
 
+  /*
+    COSTRUTTORE FACTORY PER STATONODO
+    - Scopo: Crea un'istanza di StatoNodo a partire da un oggetto JSON.
+    - Parametri:
+      - json: Mappa contenente i dati dello stato del nodo.
+    - Ritorno: Un'istanza di StatoNodo.
+  */
   factory StatoNodo.fromJson(Map<String, dynamic> json) {
     final String id = json['id_node'];
     final DateTime start = historyDateFormatter.parseUtc(json['start']);
-    final DateTime? end = json['end'] == null ? null : historyDateFormatter.parseUtc(json['end']);
+    final DateTime? end =
+        json['end'] == null ? null : historyDateFormatter.parseUtc(json['end']);
     final String status = json['node_status'];
 
-    return StatoNodo(
-        id: id,
-        start: start,
-        end: end,
-        status: status);
+    return StatoNodo(id: id, start: start, end: end, status: status);
   }
 }
 
-Future<List<StatoNodo>> getNodeStatusHistory(String nodeId, DateTime start, DateTime end, String token) async {
-  final response = await requestHelper.postRequest('/areas/nodes/history', {"id_node":nodeId, "start":dateTimeFormatter.format(start), "end":dateTimeFormatter.format(end)}, token);
+/*
+  METODO PER OTTENERE LA CRONOLOGIA DEGLI STATI DI UN NODO
+  - Scopo: Recupera la cronologia degli stati di un nodo specifico in un intervallo di tempo.
+  - Parametri:
+    - nodeId: ID del nodo di cui si vuole ottenere la cronologia degli stati.
+    - start: Data di inizio dell'intervallo di tempo.
+    - end: Data di fine dell'intervallo di tempo.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<List<StatoNodo>> contenente la cronologia degli stati del nodo.
+*/
+Future<List<StatoNodo>> getNodeStatusHistory(
+    String nodeId, DateTime start, DateTime end, String token) async {
+  final response = await requestHelper.postRequest(
+      '/areas/nodes/history',
+      {
+        "id_node": nodeId,
+        "start": dateTimeFormatter.format(start),
+        "end": dateTimeFormatter.format(end)
+      },
+      token);
 
   if (response.statusCode == 200) {
     final List<StatoNodo> states = [];
-    for (Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
+    for (Map<String, dynamic> element
+        in jsonDecode(response.body) as List<dynamic>) {
       StatoNodo stato = StatoNodo.fromJson(element);
       states.add(stato);
     }
@@ -705,7 +862,6 @@ Future<List<StatoNodo>> getNodeStatusHistory(String nodeId, DateTime start, Date
   }
 }
 
-
 /// ******************************************************************************
 /// GESTIONE NOTIFICHE
 
@@ -717,8 +873,21 @@ class NotificaSensore {
   final double benchmark;
   final bool status;
 
-  NotificaSensore({required this.id, required this.dataCreazione, required this.nome, required this.trigger, required this.benchmark, required this.status});
+  NotificaSensore(
+      {required this.id,
+      required this.dataCreazione,
+      required this.nome,
+      required this.trigger,
+      required this.benchmark,
+      required this.status});
 
+  /*
+    COSTRUTTORE FACTORY PER NOTIFICASENSORE
+    - Scopo: Crea un'istanza di NotificaSensore a partire da un oggetto JSON.
+    - Parametri:
+      - json: Mappa contenente i dati della notifica del sensore.
+    - Ritorno: Un'istanza di NotificaSensore.
+  */
   factory NotificaSensore.fromJson(Map<String, dynamic> json) {
     final int id = json['id_notify'];
     final String nome = json['name'];
@@ -733,17 +902,27 @@ class NotificaSensore {
         dataCreazione: dataCreazione,
         trigger: trigger,
         benchmark: benchmark,
-        status: status
-    );
+        status: status);
   }
 }
 
-Future<List<NotificaSensore>> getAllUserNotify(String idSensor, String token) async {
-  final response = await requestHelper.postRequest('/notify/', {'id_sensor':idSensor}, token);
+/*
+  METODO PER OTTENERE TUTTE LE NOTIFICHE DELL'UTENTE PER UN SENSORI
+  - Scopo: Recupera una lista di tutte le notifiche associate a un sensore specifico.
+  - Parametri:
+    - idSensor: ID del sensore di cui si vogliono ottenere le notifiche.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<List<NotificaSensore>> contenente la lista delle notifiche.
+*/
+Future<List<NotificaSensore>> getAllUserNotify(
+    String idSensor, String token) async {
+  final response = await requestHelper.postRequest(
+      '/notify/', {'id_sensor': idSensor}, token);
 
   if (response.statusCode == 200) {
     final List<NotificaSensore> notifiche = [];
-    for (Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
+    for (Map<String, dynamic> element
+        in jsonDecode(response.body) as List<dynamic>) {
       NotificaSensore notifica = NotificaSensore.fromJson(element);
       notifiche.add(notifica);
     }
@@ -756,16 +935,30 @@ Future<List<NotificaSensore>> getAllUserNotify(String idSensor, String token) as
   }
 }
 
-Future<String> addNotify(String idSensor, String nome, String trigger, double benchmark, String token) async {
-  final response = await requestHelper.postRequest('/notify/add',
+/*
+  METODO PER AGGIUNGERE UNA NUOVA NOTIFICA
+  - Scopo: Aggiunge una nuova notifica per un sensore specifico.
+  - Parametri:
+    - idSensor: ID del sensore per il quale si vuole aggiungere la notifica.
+    - nome: Nome della notifica.
+    - trigger: Condizione di attivazione della notifica.
+    - benchmark: Valore di riferimento per la notifica.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
+Future<String> addNotify(String idSensor, String nome, String trigger,
+    double benchmark, String token) async {
+  final response = await requestHelper.postRequest(
+      '/notify/add',
       {
-        "id_sensor":idSensor,
-        "date":dateTimeFormatter.format(DateTime.now()),
-        "name":nome,
-        "trigger":trigger,
-        "benchmark":benchmark,
-        "status":true
-      }, token);
+        "id_sensor": idSensor,
+        "date": dateTimeFormatter.format(DateTime.now()),
+        "name": nome,
+        "trigger": trigger,
+        "benchmark": benchmark,
+        "status": true
+      },
+      token);
 
   if (response.statusCode == 201) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -778,13 +971,19 @@ Future<String> addNotify(String idSensor, String nome, String trigger, double be
   }
 }
 
+/*
+  METODO PER ELIMINARE UNA NOTIFICA
+  - Scopo: Elimina una notifica specifica.
+  - Parametri:
+    - id: ID della notifica da eliminare.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
 Future<String> deleteNotify(int id, String token) async {
-  final response = await requestHelper.deleteRequest('/notify/',
-      {
-        "id_notify":id
-      }, token);
+  final response =
+      await requestHelper.deleteRequest('/notify/', {"id_notify": id}, token);
 
-  if (response.statusCode == 201) {
+  if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
     return message['message'];
   } else if (response.statusCode == 401) {
@@ -802,8 +1001,20 @@ class NotificaSensoreBinario {
   final bool benchmark;
   final bool status;
 
-  NotificaSensoreBinario({required this.id, required this.dataCreazione, required this.nome, required this.benchmark, required this.status});
+  NotificaSensoreBinario(
+      {required this.id,
+      required this.dataCreazione,
+      required this.nome,
+      required this.benchmark,
+      required this.status});
 
+  /*
+    COSTRUTTORE FACTORY PER NOTIFICASENSORBINARIO
+    - Scopo: Crea un'istanza di NotificaSensoreBinario a partire da un oggetto JSON.
+    - Parametri:
+      - json: Mappa contenente i dati della notifica del sensore binario.
+    - Ritorno: Un'istanza di NotificaSensoreBinario.
+  */
   factory NotificaSensoreBinario.fromJson(Map<String, dynamic> json) {
     final int id = json['id_notify'];
     final String nome = json['name'];
@@ -816,19 +1027,29 @@ class NotificaSensoreBinario {
         nome: nome,
         dataCreazione: dataCreazione,
         benchmark: benchmark,
-        status: status
-    );
+        status: status);
   }
 }
 
-
-Future<List<NotificaSensoreBinario>> getAllUserBinaryNotify(String idSensor, String token) async {
-  final response = await requestHelper.postRequest('/notify/', {'id_bin_sensor':idSensor}, token);
+/*
+  METODO PER OTTENERE TUTTE LE NOTIFICHE BINARIE DELL'UTENTE
+  - Scopo: Recupera una lista di tutte le notifiche binarie associate a un sensore specifico.
+  - Parametri:
+    - idSensor: ID del sensore binario di cui si vogliono ottenere le notifiche.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<List<NotificaSensoreBinario>> contenente la lista delle notifiche.
+*/
+Future<List<NotificaSensoreBinario>> getAllUserBinaryNotify(
+    String idSensor, String token) async {
+  final response = await requestHelper.postRequest(
+      '/notify/', {'id_bin_sensor': idSensor}, token);
 
   if (response.statusCode == 200) {
     final List<NotificaSensoreBinario> notifiche = [];
-    for (Map<String, dynamic> element in jsonDecode(response.body) as List<dynamic>) {
-      NotificaSensoreBinario notifica = NotificaSensoreBinario.fromJson(element);
+    for (Map<String, dynamic> element
+        in jsonDecode(response.body) as List<dynamic>) {
+      NotificaSensoreBinario notifica =
+          NotificaSensoreBinario.fromJson(element);
       notifiche.add(notifica);
     }
     return notifiche;
@@ -840,18 +1061,28 @@ Future<List<NotificaSensoreBinario>> getAllUserBinaryNotify(String idSensor, Str
   }
 }
 
-
-
-Future<String> addBinaryNotify(String idBinSensor, String nome, bool benchmark, String token) async {
-  print(nome);
-  final response = await requestHelper.postRequest('/notify/add_binary',
+/*
+  METODO PER AGGIUNGERE UNA NUOVA NOTIFICA BINARY
+  - Scopo: Aggiunge una nuova notifica binaria per un sensore binario specifico.
+  - Parametri:
+    - idBinSensor: ID del sensore binario per il quale si vuole aggiungere la notifica.
+    - nome: Nome della notifica.
+    - benchmark: Condizione di attivazione della notifica (true/false).
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
+Future<String> addBinaryNotify(
+    String idBinSensor, String nome, bool benchmark, String token) async {
+  final response = await requestHelper.postRequest(
+      '/notify/add_binary',
       {
-        "id_bin_sensor":idBinSensor,
-        "date":dateTimeFormatter.format(DateTime.now()),
-        "name":nome,
-        "benchmark":benchmark,
-        "status":true
-      }, token);
+        "id_bin_sensor": idBinSensor,
+        "date": dateTimeFormatter.format(DateTime.now()),
+        "name": nome,
+        "benchmark": benchmark,
+        "status": true
+      },
+      token);
 
   if (response.statusCode == 201) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -864,12 +1095,17 @@ Future<String> addBinaryNotify(String idBinSensor, String nome, bool benchmark, 
   }
 }
 
-
+/*
+  METODO PER ELIMINARE UNA NOTIFICA BINARY
+  - Scopo: Elimina una notifica binaria specifica.
+  - Parametri:
+    - id: ID della notifica binaria da eliminare.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
 Future<String> deleteBinaryNotify(int id, String token) async {
-  final response = await requestHelper.deleteRequest('/notify/',
-      {
-        "id_bin_notify":id
-      }, token);
+  final response = await requestHelper.deleteRequest(
+      '/notify/', {"id_bin_notify": id}, token);
 
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
@@ -882,12 +1118,17 @@ Future<String> deleteBinaryNotify(int id, String token) async {
   }
 }
 
-
+/*
+  METODO PER AGGIORNARE LO STATO DI UNA NOTIFICA
+  - Scopo: Modifica lo stato di una notifica esistente.
+  - Parametri:
+    - id: ID della notifica di cui modificare lo stato.
+    - token: Il token di autenticazione.
+  - Ritorno: Un oggetto Future<String> contenente un messaggio di conferma.
+*/
 Future<String> updateNotify(int id, String token) async {
-  final response = await requestHelper.postRequest('/notify/change_status',
-      {
-        "id_notify":id
-      }, token);
+  final response = await requestHelper.postRequest(
+      '/notify/change_status', {"id_notify": id}, token);
 
   if (response.statusCode == 200) {
     Map<String, dynamic> message = jsonDecode(response.body);
