@@ -1,6 +1,6 @@
 import 'package:dashboard_tirocinio/base_url_init.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
-import 'package:dashboard_tirocinio/screens/configurazione/base_api_url_set_page.dart';
+import 'package:dashboard_tirocinio/screens/wizard//base_api_url_set_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
@@ -31,8 +31,7 @@ class UrlInitImpl extends BaseUrlInit {
       future: initEnv(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-              width: 100, height: 100, child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return const BaseApiUrlSetPage();
         } else {

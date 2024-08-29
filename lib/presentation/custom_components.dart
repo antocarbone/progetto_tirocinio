@@ -2,7 +2,6 @@ import 'package:dashboard_tirocinio/screens/dashboard/binary_sensor_detail_page.
 import 'package:dashboard_tirocinio/screens/dashboard/node_status_history.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/sensor_detail_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
-import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -545,13 +544,13 @@ class SensorLineChart extends StatelessWidget {
           ),
           gridData: FlGridData(
             show: false,
-            drawHorizontalLine: true,
+            drawHorizontalLine: false,
             verticalInterval: 100,
-            horizontalInterval: 10,
+            horizontalInterval: 1,
             getDrawingVerticalLine: (value) {
               return FlLine(
                 color: Theme.of(context).primaryColor,
-                strokeWidth: 1,
+                strokeWidth: 1000,
               );
             },
             getDrawingHorizontalLine: (value) {
@@ -607,8 +606,8 @@ class SensorLineChart extends StatelessWidget {
             show: true,
             border: Border.all(color: Theme.of(context).primaryColor),
           ),
-          minX: 0,
-          maxX: end.toUtc().millisecondsSinceEpoch/60000-start.toUtc().millisecondsSinceEpoch/60000,
+          minX: start.toUtc().millisecondsSinceEpoch/60000,
+          maxX: end.toUtc().millisecondsSinceEpoch/60000,
           minY: 0,
           maxY: 100,
           lineBarsData: [
@@ -619,7 +618,7 @@ class SensorLineChart extends StatelessWidget {
               barWidth: 5,
               isStrokeCapRound: true,
               dotData: const FlDotData(
-                show: true,
+                show: false,
               ),
               belowBarData: BarAreaData(
                 show: true,

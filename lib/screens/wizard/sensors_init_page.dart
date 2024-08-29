@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
-import 'package:dashboard_tirocinio/screens/configurazione/commissioning_page.dart';
+import 'package:dashboard_tirocinio/screens/wizard/commissioning_page.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_esp_ble_prov/flutter_esp_ble_prov.dart';

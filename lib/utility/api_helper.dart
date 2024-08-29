@@ -499,8 +499,7 @@ class SensorReadingsHistory {
     List<FlSpot> out = [];
     for (final elem in readings) {
       out.add(FlSpot(
-          elem.date.toUtc().millisecondsSinceEpoch / 60000 -
-              start.toUtc().millisecondsSinceEpoch / 60000,
+          elem.date.toUtc().millisecondsSinceEpoch / 60000,
           double.parse(elem.value.toStringAsFixed(2))));
     }
     return out;

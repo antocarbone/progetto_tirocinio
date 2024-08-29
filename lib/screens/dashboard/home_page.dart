@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
-import 'package:dashboard_tirocinio/screens/configurazione/ble_connection_dialog.dart';
+import 'package:dashboard_tirocinio/screens/wizard/ble_connection_dialog.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';

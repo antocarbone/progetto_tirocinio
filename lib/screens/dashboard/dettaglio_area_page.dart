@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
 import 'package:dashboard_tirocinio/screens/dashboard/home_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/settings_page.dart';
-import 'package:dashboard_tirocinio/screens/configurazione/ble_connection_dialog.dart';
+import 'package:dashboard_tirocinio/screens/wizard/ble_connection_dialog.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -72,7 +72,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
       });
     }
 
-    initUserAreas();
+    await initUserAreas();
   }
 
   Future<void> initUserAreas() async {
@@ -91,7 +91,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
           MaterialPageRoute(builder: (context) => const LoginPage()),
           (Route<dynamic> route) => false);
     }
-    initAreaNodes();
+    await initAreaNodes();
   }
 
   Future<void> initAreaNodes() async {
@@ -110,7 +110,7 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
           MaterialPageRoute(builder: (context) => const LoginPage()),
           (Route<dynamic> route) => false);
     }
-    initNodeSensors();
+    await initNodeSensors();
   }
 
   Future<void> initNodeSensors() async {
@@ -282,26 +282,31 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
                 const Divider(),
                 Flexible(
                   flex: 6,
-                  child: ListView.builder(
-                    itemCount: userAreas.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: ElevatedButton(
-                            autofocus:
-                                (widget.area.nome == userAreas[index].nome),
-                            onPressed: () {
-                              Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(
-                                      builder: (context) => DettaglioAreaPage(
-                                          area: userAreas[index])),
-                                  (Route<dynamic> route) => false);
-                            },
-                            child: ListTile(
-                                title: Center(
-                                    child: Text(userAreas[index].nome)))),
-                      );
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      return await initUserAreas();
                     },
+                    child: ListView.builder(
+                      itemCount: userAreas.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: ElevatedButton(
+                              autofocus:
+                                  (widget.area.nome == userAreas[index].nome),
+                              onPressed: () {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                        builder: (context) => DettaglioAreaPage(
+                                            area: userAreas[index])),
+                                    (Route<dynamic> route) => false);
+                              },
+                              child: ListTile(
+                                  title: Center(
+                                      child: Text(userAreas[index].nome)))),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -316,52 +321,57 @@ class _DettaglioAreaPageState extends State<DettaglioAreaPage> {
             child: !isNodesInit
                 ? const CircularProgressIndicator()
                 : areaNodes.isNotEmpty
-                    ? GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 1200,
-                                mainAxisExtent: kIsWeb ? 300 : 200,
-                                crossAxisSpacing: 5,
-                                mainAxisSpacing: 20),
-                        itemCount: areaNodes.length,
-                        itemBuilder: (context, index) => GridTile(
-                          child: FittedBox(
-                              child: MyNodeSummary(
-                            nodo: areaNodes[index],
-                            sensors: nodeSensors.isEmpty
-                                ? []
-                                : nodeSensors[index]['sensors'],
-                            binarySensors: nodeSensors.isEmpty
-                                ? []
-                                : nodeSensors[index]['binary_sensors'],
-                            token: _token!,
-                            onCancel: () async {
-                              try {
-                                String res = await deleteNode(
-                                    areaNodes[index].id, _token!);
-                                Utils.showSnackBar(
-                                    context, 'NODO ELIMINATO', res, false);
-                                Navigator.of(context).pop();
-                                initAreaNodes();
-                              } on HttpException catch (e) {
-                                await _prefs.remove('token');
-                                await _prefs.remove('tipo');
-                                Utils.showSnackBar(
-                                    context, 'ERRORE', e.message, true);
-                                Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            const LoginPage()),
-                                    (Route<dynamic> route) => false);
-                              } on Exception catch (e) {
-                                Utils.showSnackBar(
-                                    context, 'ERRORE', e.toString(), true);
-                                Navigator.of(context).pop();
-                              }
-                            },
-                          )),
+                    ? RefreshIndicator(
+              onRefresh: () async {
+                return await initAreaNodes();
+              },
+                      child: GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 1200,
+                                  mainAxisExtent: kIsWeb ? 300 : 200,
+                                  crossAxisSpacing: 5,
+                                  mainAxisSpacing: 20),
+                          itemCount: areaNodes.length,
+                          itemBuilder: (context, index) => GridTile(
+                            child: FittedBox(
+                                child: MyNodeSummary(
+                              nodo: areaNodes[index],
+                              sensors: nodeSensors.isEmpty
+                                  ? []
+                                  : nodeSensors[index]['sensors'],
+                              binarySensors: nodeSensors.isEmpty
+                                  ? []
+                                  : nodeSensors[index]['binary_sensors'],
+                              token: _token!,
+                              onCancel: () async {
+                                try {
+                                  String res = await deleteNode(
+                                      areaNodes[index].id, _token!);
+                                  Utils.showSnackBar(
+                                      context, 'NODO ELIMINATO', res, false);
+                                  Navigator.of(context).pop();
+                                  initAreaNodes();
+                                } on HttpException catch (e) {
+                                  await _prefs.remove('token');
+                                  await _prefs.remove('tipo');
+                                  Utils.showSnackBar(
+                                      context, 'ERRORE', e.message, true);
+                                  Navigator.of(context).pushAndRemoveUntil(
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              const LoginPage()),
+                                      (Route<dynamic> route) => false);
+                                } on Exception catch (e) {
+                                  Utils.showSnackBar(
+                                      context, 'ERRORE', e.toString(), true);
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                            )),
+                          ),
                         ),
-                      )
+                    )
                     : const Text(
                         'Nessun nodo è collegato a quest\'area\nUsa la versione android dell\'app per aggiungerne uno',
                         textAlign: TextAlign.center),

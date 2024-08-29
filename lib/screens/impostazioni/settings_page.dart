@@ -1,5 +1,6 @@
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
+import 'package:dashboard_tirocinio/screens/wizard/base_api_url_set_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/areas_manage_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/change_mail_page.dart';
 import 'package:dashboard_tirocinio/screens/impostazioni/change_password_page.dart';
@@ -185,18 +186,57 @@ class _SettingsPageState extends State<SettingsPage> {
                       ],
                     ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ChangePasswordPage()));
+                              },
+                              child: const Text('Cambia password',
+                                  style: TextStyle(fontSize: 35))),
+                        ),
+                      ],
+                    ),
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Expanded(
                         child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.errorContainer),
                             onPressed: () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ChangePasswordPage()));
+                              showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return ConfirmDelete(onConfirm: () async {
+                                      try {
+                                        await _prefs.clear();
+                                        Navigator.of(
+                                            context)
+                                            .pushAndRemoveUntil(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                const BaseApiUrlSetPage()),
+                                                (Route<dynamic> route) =>
+                                            false);
+                                      } on Exception catch (e) {
+                                        Utils.showSnackBar(context, 'ERRORE',
+                                            e.toString(), true);
+                                        Navigator.of(context).pop();
+                                      }
+                                    });
+                                  });
                             },
-                            child: const Text('Cambia password',
-                                style: TextStyle(fontSize: 35))),
+                            child: FittedBox(
+                              child: Text('Cancella configurazione',
+                                  style: TextStyle(fontSize: 35, color: Theme.of(context).colorScheme.onErrorContainer)),
+                            )),
                       ),
                     ],
                   ),
@@ -206,6 +246,34 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class ConfirmDelete extends StatelessWidget {
+  final VoidCallback onConfirm;
+  const ConfirmDelete({super.key, required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Center(
+          child:
+          Text('Conferma', style: TextStyle(fontWeight: FontWeight.bold))),
+      actions: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancella')),
+            ElevatedButton(onPressed: onConfirm, child: const Text('Conferma')),
+          ],
+        )
+      ],
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
-import 'package:dashboard_tirocinio/screens/configurazione/node_init_page.dart';
+import 'package:dashboard_tirocinio/screens/wizard/node_init_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:dashboard_tirocinio/utility/utils.dart';
 import 'package:encrypt_shared_preferences/provider.dart';

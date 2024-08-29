@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:dashboard_tirocinio/presentation/custom_components.dart';
 import 'package:dashboard_tirocinio/screens/autenticazione/login_page.dart';
-import 'package:dashboard_tirocinio/screens/configurazione/area_assign_page.dart';
+import 'package:dashboard_tirocinio/screens/wizard/area_assign_page.dart';
 import 'package:dashboard_tirocinio/utility/api_helper.dart';
 import 'package:encrypt_shared_preferences/provider.dart';
 import 'package:flutter/material.dart';

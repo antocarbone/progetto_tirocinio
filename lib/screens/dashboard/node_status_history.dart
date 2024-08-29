@@ -18,7 +18,7 @@ class NodeStatusHistory extends StatefulWidget {
 }
 
 class _NodeStatusHistoryState extends State<NodeStatusHistory> {
-  DateFormat dateTimeFormatter = DateFormat('yyyy-MM-dd kk:mm');
+  DateFormat dateTimeFormatter = DateFormat('dd-MM-yyyy kk:mm');
   DateTime? _startDateTime;
   DateTime? _endDateTime;
   final DateTime _defaultStart = DateTime.now().subtract(const Duration(days: 7));
@@ -128,8 +128,8 @@ class _NodeStatusHistoryState extends State<NodeStatusHistory> {
               child: FittedBox(
                 child: Text(
                   _startDateTime == null
-                      ? dateTimeFormatter.format(_defaultStart.toLocal())
-                      : 'Inizio: ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+                      ? 'Da: ${dateTimeFormatter.format(_defaultStart.toLocal())}'
+                      : 'Da: ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
                 ),
               ),
             ),
@@ -138,13 +138,13 @@ class _NodeStatusHistoryState extends State<NodeStatusHistory> {
               child: FittedBox(
                 child: Text(
                   _endDateTime == null
-                      ? dateTimeFormatter.format(_defaultEnd.toLocal())
-                      : 'Fine: ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                      ? 'A: ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
+                      : 'A: ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
                 ),
               ),
             ),
             Expanded(
-              child: !isHistoryInit ? const CircularProgressIndicator() : history.isNotEmpty ? ListView.builder(
+              child: !isHistoryInit ? const Center(child:  SizedBox(child: CircularProgressIndicator())) : history.isNotEmpty ? ListView.builder(
                 itemCount: history.length,
                 itemBuilder: (context, index) {
                   return MyGenericListElement(

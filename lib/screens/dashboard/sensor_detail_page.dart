@@ -19,7 +19,7 @@ class SensorDetailPage extends StatefulWidget {
 }
 
 class _SensorDetailPageState extends State<SensorDetailPage> {
-  DateFormat dateTimeFormatter = DateFormat('yyyy/MM/dd kk:mm');
+  DateFormat dateTimeFormatter = DateFormat('dd/MM/yyyy kk:mm');
   DateTime? _startDateTime;
   DateTime? _endDateTime;
   final DateTime _defaultStart =
@@ -27,6 +27,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
   final DateTime _defaultEnd =
       DateTime.now().subtract(const Duration(minutes: 10));
   List<FlSpot> history = [];
+  bool isHistoryInit = false;
 
   bool _isExpanded = false;
   final TextEditingController _nameController = TextEditingController();
@@ -63,8 +64,11 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
         if (isStartDate) {
           if (_endDateTime != null) {
             if (pickedDateTime.isBefore(_endDateTime!)) {
+              List<FlSpot> tmpHistory = await getSensorReadings(
+                  widget.sensor.id, pickedDateTime, _endDateTime!, _token!);
               setState(() {
                 _startDateTime = pickedDateTime;
+                history = tmpHistory;
               });
             } else {
               Utils.showSnackBar(
@@ -74,8 +78,11 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
                   true);
             }
           } else {
+            List<FlSpot> tmpHistory = await getSensorReadings(
+                widget.sensor.id, pickedDateTime, _defaultEnd, _token!);
             setState(() {
               _startDateTime = pickedDateTime;
+              history = tmpHistory;
             });
           }
         } else {
@@ -96,7 +103,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
             }
           } else {
             List<FlSpot> tmpHistory = await getSensorReadings(
-                widget.sensor.id, _startDateTime!, pickedDateTime, _token!);
+                widget.sensor.id, _defaultStart, pickedDateTime, _token!);
             setState(() {
               _endDateTime = pickedDateTime;
               history = tmpHistory;
@@ -135,7 +142,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
       _userType = tmpType!;
     });
 
-    await initHistory(_defaultEnd, _defaultEnd);
+    await initHistory(_defaultStart, _defaultEnd);
   }
 
   Future<void> initHistory(DateTime start, DateTime end) async {
@@ -144,6 +151,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
           await getSensorReadings(widget.sensor.id, start, end, _token!);
       setState(() {
         history = tmpHistory;
+        isHistoryInit = true;
       });
     } on HttpException catch (e) {
       await _prefs.remove('token');
@@ -246,252 +254,259 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 800,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    MyGenericListElement(
-                      leading: FittedBox(
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            RadiusChart(chartData: [
-                              ChartData('', widget.sensor.lettura)
-                            ]),
-                            widget.sensor.lettura != null
-                                ? Text(
-                                    '${widget.sensor.lettura}',
-                                    style: const TextStyle(
-                                      fontSize: 50,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )
-                                : const Text('Non\nDisponibile',
-                                    style: TextStyle(
-                                      fontSize: 25,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center),
-                          ],
-                        ),
-                      ),
-                      title: widget.sensor.nome,
-                      subtitle: widget.sensor.lettura == null
-                          ? 'Non Disponibile'
-                          : '${widget.sensor.lettura} ${widget.sensor.unitaMisura}',
-                    ),
-                    Card(
-                      elevation: 10,
-                      child: Padding(
-                        padding: const EdgeInsets.all(25),
-                        child: Column(
-                          children: [
-                            if (history.isNotEmpty) ...[
-                              AspectRatio(
-                                aspectRatio: 16 / 9,
-                                child: SensorLineChart(
-                                    pointList: history,
-                                    start: _startDateTime == null
-                                        ? _defaultStart
-                                        : _startDateTime!,
-                                    end: _endDateTime == null
-                                        ? _defaultEnd
-                                        : _endDateTime!),
-                              )
-                            ] else ...[
-                              const Center(
-                                  child: Text(
-                                      'Non sono presenti letture nel periodo specificato',
-                                      textAlign: TextAlign.center))
+        child: RefreshIndicator(
+          onRefresh: () async {
+            return await initHistory(_startDateTime ?? _defaultStart, _endDateTime ?? _defaultEnd);
+          },
+          child: ListView(
+            children: [Padding(
+              padding: const EdgeInsets.all(12),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 800,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      MyGenericListElement(
+                        leading: FittedBox(
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              RadiusChart(chartData: [
+                                ChartData('', widget.sensor.lettura)
+                              ]),
+                              widget.sensor.lettura != null
+                                  ? Text(
+                                      '${widget.sensor.lettura}',
+                                      style: const TextStyle(
+                                        fontSize: 50,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : const Text('Non\nDisponibile',
+                                      style: TextStyle(
+                                        fontSize: 25,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center),
                             ],
-                            Padding(
-                              padding: const EdgeInsets.only(top: 20),
-                              child: FittedBox(
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          _selectDateTime(context, true),
-                                      child: Text(
-                                        _startDateTime == null
-                                            ? 'Da ${dateTimeFormatter.format(_defaultStart.toLocal())}'
-                                            : 'Da ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+                          ),
+                        ),
+                        title: widget.sensor.nome,
+                        subtitle: widget.sensor.lettura == null
+                            ? 'Non Disponibile'
+                            : '${widget.sensor.lettura} ${widget.sensor.unitaMisura}',
+                      ),
+                      Card(
+                        elevation: 10,
+                        child: Padding(
+                          padding: const EdgeInsets.all(25),
+                          child: Column(
+                            children: [
+                              if(!isHistoryInit) ... [
+                                const CircularProgressIndicator()
+                              ] else if (history.isNotEmpty) ...[
+                                AspectRatio(
+                                  aspectRatio: 16 / 9,
+                                  child: SensorLineChart(
+                                      pointList: history,
+                                      start: _startDateTime == null
+                                          ? _defaultStart
+                                          : _startDateTime!,
+                                      end: _endDateTime == null
+                                          ? _defaultEnd
+                                          : _endDateTime!),
+                                )
+                              ] else ...[
+                                const Center(
+                                    child: Text(
+                                        'Non sono presenti letture nel periodo specificato',
+                                        textAlign: TextAlign.center))
+                              ],
+                              Padding(
+                                padding: const EdgeInsets.only(top: 20),
+                                child: FittedBox(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            _selectDateTime(context, true),
+                                        child: Text(
+                                          _startDateTime == null
+                                              ? 'Da ${dateTimeFormatter.format(_defaultStart.toLocal())}'
+                                              : 'Da ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+                                        ),
                                       ),
-                                    ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          _selectDateTime(context, false),
-                                      child: Text(
-                                        _endDateTime == null
-                                            ? 'A ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
-                                            : 'A ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                                      TextButton(
+                                        onPressed: () =>
+                                            _selectDateTime(context, false),
+                                        child: Text(
+                                          _endDateTime == null
+                                              ? 'A ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
+                                              : 'A ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    if (notifiche.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Center(
-                            child: Text('Le tue notifiche',
-                                style: TextStyle(
-                                    fontSize: 25,
-                                    fontWeight: FontWeight.bold))),
-                      )
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 5),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: notifiche.length,
-                        itemBuilder: (context, index) {
-                          return MyGenericListElement(
-                            leading: const Icon(Icons.notifications),
-                            title: notifiche[index].nome,
-                            subtitle:
-                                'Avvisami quando ${notifiche[index].trigger} ${notifiche[index].benchmark}',
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    showDialog(
-                                        context: context,
-                                        builder: (context) {
-                                          return ConfirmDelete(
-                                              onConfirm: () async {
-                                            try {
-                                              String res = await deleteNotify(
-                                                  notifiche[index].id, _token!);
-                                              Utils.showSnackBar(
-                                                  context,
-                                                  'NOTIFICA ELIMINATA',
-                                                  res,
-                                                  false);
-                                              Navigator.of(context).pop();
-                                              initNotifiche();
-                                            } on HttpException catch (e) {
-                                              await _prefs.remove('token');
-                                              await _prefs.remove('tipo');
-                                              Utils.showSnackBar(context,
-                                                  'ERRORE', e.message, true);
-                                              Navigator.of(context)
-                                                  .pushAndRemoveUntil(
-                                                      MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              const LoginPage()),
-                                                      (Route<dynamic> route) =>
-                                                          false);
-                                            } on Exception catch (e) {
-                                              Utils.showSnackBar(context,
-                                                  'ERRORE', e.toString(), true);
-                                              Navigator.of(context).pop();
-                                            }
+                      if (notifiche.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Center(
+                              child: Text('Le tue notifiche',
+                                  style: TextStyle(
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.bold))),
+                        )
+                      ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: notifiche.length,
+                          itemBuilder: (context, index) {
+                            return MyGenericListElement(
+                              leading: const Icon(Icons.notifications),
+                              title: notifiche[index].nome,
+                              subtitle:
+                                  'Avvisami quando ${notifiche[index].trigger} ${notifiche[index].benchmark}',
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      showDialog(
+                                          context: context,
+                                          builder: (context) {
+                                            return ConfirmDelete(
+                                                onConfirm: () async {
+                                              try {
+                                                String res = await deleteNotify(
+                                                    notifiche[index].id, _token!);
+                                                Utils.showSnackBar(
+                                                    context,
+                                                    'NOTIFICA ELIMINATA',
+                                                    res,
+                                                    false);
+                                                Navigator.of(context).pop();
+                                                initNotifiche();
+                                              } on HttpException catch (e) {
+                                                await _prefs.remove('token');
+                                                await _prefs.remove('tipo');
+                                                Utils.showSnackBar(context,
+                                                    'ERRORE', e.message, true);
+                                                Navigator.of(context)
+                                                    .pushAndRemoveUntil(
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                const LoginPage()),
+                                                        (Route<dynamic> route) =>
+                                                            false);
+                                              } on Exception catch (e) {
+                                                Utils.showSnackBar(context,
+                                                    'ERRORE', e.toString(), true);
+                                                Navigator.of(context).pop();
+                                              }
+                                            });
                                           });
-                                        });
-                                  },
-                                  icon: const Icon(Icons.delete_rounded),
-                                ),
-                                Switch(
-                                  value: notifiche[index].status,
-                                  onChanged: (value) async {
-                                    try {
-                                      String res = await updateNotify(
-                                          notifiche[index].id, _token!);
-                                      Utils.showSnackBar(
-                                          context,
-                                          'STATO NOTIFICA AGGIORNATO',
-                                          res,
-                                          false);
-                                      initNotifiche();
-                                    } on HttpException catch (e) {
-                                      await _prefs.remove('token');
-                                      await _prefs.remove('tipo');
-                                      Utils.showSnackBar(
-                                          context, 'ERRORE', e.message, true);
-                                      Navigator.of(context).pushAndRemoveUntil(
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const LoginPage()),
-                                          (Route<dynamic> route) => false);
-                                    } on Exception catch (e) {
-                                      Utils.showSnackBar(context, 'ERRORE',
-                                          e.toString(), true);
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: Center(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return NotifyDialog(
-                                  nameController: _nameController,
-                                  valueController: _valueController,
-                                  addNotifica: (String nome, String trigger,
-                                      double valore) async {
-                                    try {
-                                      String res = await addNotify(
-                                          widget.sensor.id.toString(),
-                                          nome,
-                                          trigger,
-                                          valore,
-                                          _token!);
-                                      Utils.showSnackBar(super.context,
-                                          'NOTIFICA AGGIUNTA', res, false);
-                                      initNotifiche();
-                                    } on HttpException catch (e) {
-                                      await _prefs.remove('token');
-                                      await _prefs.remove('tipo');
-                                      Utils.showSnackBar(
-                                          context, 'ERRORE', e.message, true);
-                                      Navigator.of(context).pushAndRemoveUntil(
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const LoginPage()),
-                                          (Route<dynamic> route) => false);
-                                    } on Exception catch (e) {
-                                      Utils.showSnackBar(super.context,
-                                          'ERRORE', e.toString(), true);
-                                    }
-                                  },
-                                );
-                              },
+                                    },
+                                    icon: const Icon(Icons.delete_rounded),
+                                  ),
+                                  Switch(
+                                    value: notifiche[index].status,
+                                    onChanged: (value) async {
+                                      try {
+                                        String res = await updateNotify(
+                                            notifiche[index].id, _token!);
+                                        Utils.showSnackBar(
+                                            context,
+                                            'STATO NOTIFICA AGGIORNATO',
+                                            res,
+                                            false);
+                                        initNotifiche();
+                                      } on HttpException catch (e) {
+                                        await _prefs.remove('token');
+                                        await _prefs.remove('tipo');
+                                        Utils.showSnackBar(
+                                            context, 'ERRORE', e.message, true);
+                                        Navigator.of(context).pushAndRemoveUntil(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const LoginPage()),
+                                            (Route<dynamic> route) => false);
+                                      } on Exception catch (e) {
+                                        Utils.showSnackBar(context, 'ERRORE',
+                                            e.toString(), true);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
                             );
                           },
-                          child: const Text('Aggiungi una notifica'),
                         ),
                       ),
-                    ),
-                  ],
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return NotifyDialog(
+                                    nameController: _nameController,
+                                    valueController: _valueController,
+                                    addNotifica: (String nome, String trigger,
+                                        double valore) async {
+                                      try {
+                                        String res = await addNotify(
+                                            widget.sensor.id.toString(),
+                                            nome,
+                                            trigger,
+                                            valore,
+                                            _token!);
+                                        Utils.showSnackBar(super.context,
+                                            'NOTIFICA AGGIUNTA', res, false);
+                                        initNotifiche();
+                                      } on HttpException catch (e) {
+                                        await _prefs.remove('token');
+                                        await _prefs.remove('tipo');
+                                        Utils.showSnackBar(
+                                            context, 'ERRORE', e.message, true);
+                                        Navigator.of(context).pushAndRemoveUntil(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const LoginPage()),
+                                            (Route<dynamic> route) => false);
+                                      } on Exception catch (e) {
+                                        Utils.showSnackBar(super.context,
+                                            'ERRORE', e.toString(), true);
+                                      }
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                            child: const Text('Aggiungi una notifica'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            )],
           ),
         ),
       ),

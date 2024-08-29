@@ -19,7 +19,7 @@ class BinarySensorDetailPage extends StatefulWidget {
 }
 
 class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
-  DateFormat dateTimeFormatter = DateFormat('yyyy/MM/dd kk:mm');
+  DateFormat dateTimeFormatter = DateFormat('dd/MM/yyyy kk:mm');
   DateTime? _startDateTime;
   DateTime? _endDateTime;
   final DateTime _defaultStart =
@@ -27,8 +27,9 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
   final DateTime _defaultEnd =
       DateTime.now().subtract(const Duration(minutes: 10));
 
-  BinarySensorReadingsHistory history =
-      BinarySensorReadingsHistory(readings: []);
+  BinarySensorReadingsHistory history = BinarySensorReadingsHistory(readings: []);
+  bool isHistoryInit = false;
+
   bool _isExpanded = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _valueController = TextEditingController();
@@ -64,8 +65,12 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
         if (isStartDate) {
           if (_endDateTime != null) {
             if (pickedDateTime.isBefore(_endDateTime!)) {
+              BinarySensorReadingsHistory tmpHistory =
+              await getBinarySensorReadings(widget.sensor.id,
+                  pickedDateTime, _endDateTime!, _token!);
               setState(() {
                 _startDateTime = pickedDateTime;
+                history = tmpHistory;
               });
             } else {
               Utils.showSnackBar(
@@ -75,8 +80,12 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
                   true);
             }
           } else {
+            BinarySensorReadingsHistory tmpHistory =
+            await getBinarySensorReadings(
+                widget.sensor.id, pickedDateTime, _defaultEnd, _token!);
             setState(() {
               _startDateTime = pickedDateTime;
+              history = tmpHistory;
             });
           }
         } else {
@@ -147,6 +156,7 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
           await getBinarySensorReadings(widget.sensor.id, start, end, _token!);
       setState(() {
         history = tmpHistory;
+        isHistoryInit = true;
       });
     } on HttpException catch (e) {
       await _prefs.remove('token');
@@ -249,249 +259,256 @@ class _BinarySensorDetailPageState extends State<BinarySensorDetailPage> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 800,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    MyGenericListElement(
-                        leading: Icon(
-                            MdiIcons.fromString(widget.sensor.codiceIcona)),
-                        title: widget.sensor.nome,
-                        subtitle:
-                            '${widget.sensor.valore == null ? 'non disponibile' : widget.sensor.valore! ? widget.sensor.stringaTrue : widget.sensor.stringaFalse} ${widget.sensor.dataLettura == null ? '' : '- ${dateTimeFormatter.format(widget.sensor.dataLettura!)}'}'),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxHeight: 600,
-                      ),
-                      child: Card(
-                        elevation: 10,
-                        child: Padding(
-                          padding: const EdgeInsets.all(25),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 20),
-                                child: FittedBox(
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            _selectDateTime(context, true),
-                                        child: Text(
-                                          _startDateTime == null
-                                              ? 'Da: ${dateTimeFormatter.format(_defaultStart.toLocal())}'
-                                              : 'Da: ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+        child: RefreshIndicator(
+          onRefresh: () async {
+            return await initHistory(_startDateTime ?? _defaultStart, _endDateTime ?? _defaultEnd);
+          },
+          child: ListView(
+            children: [Padding(
+              padding: const EdgeInsets.all(12),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 800,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      MyGenericListElement(
+                          leading: Icon(
+                              MdiIcons.fromString(widget.sensor.codiceIcona)),
+                          title: widget.sensor.nome,
+                          subtitle:
+                              '${widget.sensor.valore == null ? 'non disponibile' : widget.sensor.valore! ? widget.sensor.stringaTrue : widget.sensor.stringaFalse} ${widget.sensor.dataLettura == null ? '' : '- ${dateTimeFormatter.format(widget.sensor.dataLettura!)}'}'),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxHeight: 600,
+                        ),
+                        child: Card(
+                          elevation: 10,
+                          child: Padding(
+                            padding: const EdgeInsets.all(25),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 20),
+                                  child: FittedBox(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              _selectDateTime(context, true),
+                                          child: Text(
+                                            _startDateTime == null
+                                                ? 'Da: ${dateTimeFormatter.format(_defaultStart.toLocal())}'
+                                                : 'Da: ${dateTimeFormatter.format(_startDateTime!.toLocal())}',
+                                          ),
                                         ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            _selectDateTime(context, false),
-                                        child: Text(
-                                          _endDateTime == null
-                                              ? 'A: ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
-                                              : 'A: ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                                        TextButton(
+                                          onPressed: () =>
+                                              _selectDateTime(context, false),
+                                          child: Text(
+                                            _endDateTime == null
+                                                ? 'A: ${dateTimeFormatter.format(_defaultEnd.toLocal())}'
+                                                : 'A: ${dateTimeFormatter.format(_endDateTime!.toLocal())}',
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              if (history.readings.isNotEmpty) ...[
-                                Expanded(
-                                  child: ListView.builder(
-                                    shrinkWrap: true,
-                                    itemCount: history.readings.length,
-                                    itemBuilder: (context, index) {
-                                      return MyGenericListElement(
-                                        title: history.readings[index].value
-                                            ? widget.sensor.stringaTrue
-                                            : widget.sensor.stringaFalse,
-                                        subtitle: dateTimeFormatter.format(
-                                            history.readings[index].date),
-                                        leading: Icon(MdiIcons.fromString(
-                                            widget.sensor.codiceIcona)),
-                                      );
-                                    },
-                                  ),
-                                )
-                              ] else ...[
-                                const Center(
-                                    child: Text(
-                                        'Non sono presenti letture nel periodo specificato',
-                                        textAlign: TextAlign.center))
+                                if (!isHistoryInit) ... [
+                                  const CircularProgressIndicator()
+                                ] else if (history.readings.isNotEmpty) ...[
+                                  Expanded(
+                                    child: ListView.builder(
+                                      shrinkWrap: true,
+                                      itemCount: history.readings.length,
+                                      itemBuilder: (context, index) {
+                                        return MyGenericListElement(
+                                          title: history.readings[index].value
+                                              ? widget.sensor.stringaTrue
+                                              : widget.sensor.stringaFalse,
+                                          subtitle: dateTimeFormatter.format(
+                                              history.readings[index].date),
+                                          leading: Icon(MdiIcons.fromString(
+                                              widget.sensor.codiceIcona)),
+                                        );
+                                      },
+                                    ),
+                                  )
+                                ] else ...[
+                                  const Center(
+                                      child: Text(
+                                          'Non sono presenti letture nel periodo specificato',
+                                          textAlign: TextAlign.center))
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    if (notifiche.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Center(
-                            child: Text('Le tue notifiche',
-                                style: TextStyle(
-                                    fontSize: 25,
-                                    fontWeight: FontWeight.bold))),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: notifiche.length,
-                          itemBuilder: (context, index) {
-                            return MyGenericListElement(
-                              leading: const Icon(Icons.notifications),
-                              title: notifiche[index].nome,
-                              subtitle:
-                                  'Avvisami quando la lettura è ${notifiche[index].benchmark ? widget.sensor.stringaTrue : widget.sensor.stringaFalse}',
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      showDialog(
-                                          context: context,
-                                          builder: (context) {
-                                            return ConfirmDelete(
-                                                onConfirm: () async {
-                                              try {
-                                                String res =
-                                                    await deleteBinaryNotify(
-                                                        notifiche[index].id,
-                                                        _token!);
-                                                Utils.showSnackBar(
-                                                    context,
-                                                    'NOTIFICA ELIMINATA',
-                                                    res,
-                                                    false);
-                                                Navigator.of(context).pop();
-                                                initNotifiche();
-                                              } on HttpException catch (e) {
-                                                await _prefs.remove('token');
-                                                await _prefs.remove('tipo');
-                                                Utils.showSnackBar(context,
-                                                    'ERRORE', e.message, true);
-                                                Navigator.of(context)
-                                                    .pushAndRemoveUntil(
-                                                        MaterialPageRoute(
-                                                            builder: (context) =>
-                                                                const LoginPage()),
-                                                        (Route<dynamic>
-                                                                route) =>
-                                                            false);
-                                              } on Exception catch (e) {
-                                                Utils.showSnackBar(
-                                                    context,
-                                                    'ERRORE',
-                                                    e.toString(),
-                                                    true);
-                                              }
+                      if (notifiche.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Center(
+                              child: Text('Le tue notifiche',
+                                  style: TextStyle(
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.bold))),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: notifiche.length,
+                            itemBuilder: (context, index) {
+                              return MyGenericListElement(
+                                leading: const Icon(Icons.notifications),
+                                title: notifiche[index].nome,
+                                subtitle:
+                                    'Avvisami quando la lettura è ${notifiche[index].benchmark ? widget.sensor.stringaTrue : widget.sensor.stringaFalse}',
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {
+                                        showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return ConfirmDelete(
+                                                  onConfirm: () async {
+                                                try {
+                                                  String res =
+                                                      await deleteBinaryNotify(
+                                                          notifiche[index].id,
+                                                          _token!);
+                                                  Utils.showSnackBar(
+                                                      context,
+                                                      'NOTIFICA ELIMINATA',
+                                                      res,
+                                                      false);
+                                                  Navigator.of(context).pop();
+                                                  initNotifiche();
+                                                } on HttpException catch (e) {
+                                                  await _prefs.remove('token');
+                                                  await _prefs.remove('tipo');
+                                                  Utils.showSnackBar(context,
+                                                      'ERRORE', e.message, true);
+                                                  Navigator.of(context)
+                                                      .pushAndRemoveUntil(
+                                                          MaterialPageRoute(
+                                                              builder: (context) =>
+                                                                  const LoginPage()),
+                                                          (Route<dynamic>
+                                                                  route) =>
+                                                              false);
+                                                } on Exception catch (e) {
+                                                  Utils.showSnackBar(
+                                                      context,
+                                                      'ERRORE',
+                                                      e.toString(),
+                                                      true);
+                                                }
+                                              });
                                             });
-                                          });
-                                    },
-                                    icon: const Icon(Icons.delete_rounded),
-                                  ),
-                                  Switch(
-                                    value: notifiche[index].status,
-                                    onChanged: (value) async {
+                                      },
+                                      icon: const Icon(Icons.delete_rounded),
+                                    ),
+                                    Switch(
+                                      value: notifiche[index].status,
+                                      onChanged: (value) async {
+                                        try {
+                                          String res = await updateNotify(
+                                              notifiche[index].id, _token!);
+                                          Utils.showSnackBar(
+                                              context,
+                                              'STATO NOTIFICA AGGIORNATO',
+                                              res,
+                                              false);
+                                          initNotifiche();
+                                        } on HttpException catch (e) {
+                                          await _prefs.remove('token');
+                                          await _prefs.remove('tipo');
+                                          Utils.showSnackBar(
+                                              context, 'ERRORE', e.message, true);
+                                          Navigator.of(context)
+                                              .pushAndRemoveUntil(
+                                                  MaterialPageRoute(
+                                                      builder:
+                                                          (context) =>
+                                                              const LoginPage()),
+                                                  (Route<dynamic> route) =>
+                                                      false);
+                                        } on Exception catch (e) {
+                                          Utils.showSnackBar(context, 'ERRORE',
+                                              e.toString(), true);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      ],
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return NotifyDialog(
+                                    nameController: _nameController,
+                                    valueController: _valueController,
+                                    stringaTrue: widget.sensor.stringaTrue,
+                                    stringaFalse: widget.sensor.stringaFalse,
+                                    addNotifica:
+                                        (String nome, bool benchmark) async {
                                       try {
-                                        String res = await updateNotify(
-                                            notifiche[index].id, _token!);
-                                        Utils.showSnackBar(
-                                            context,
-                                            'STATO NOTIFICA AGGIORNATO',
-                                            res,
-                                            false);
+                                        String res = await addBinaryNotify(
+                                            widget.sensor.id.toString(),
+                                            nome,
+                                            benchmark,
+                                            _token!);
+                                        Utils.showSnackBar(super.context,
+                                            'NOTIFICA AGGIUNTA', res, false);
                                         initNotifiche();
                                       } on HttpException catch (e) {
                                         await _prefs.remove('token');
                                         await _prefs.remove('tipo');
                                         Utils.showSnackBar(
                                             context, 'ERRORE', e.message, true);
-                                        Navigator.of(context)
-                                            .pushAndRemoveUntil(
-                                                MaterialPageRoute(
-                                                    builder:
-                                                        (context) =>
-                                                            const LoginPage()),
-                                                (Route<dynamic> route) =>
-                                                    false);
+                                        Navigator.of(context).pushAndRemoveUntil(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const LoginPage()),
+                                            (Route<dynamic> route) => false);
                                       } on Exception catch (e) {
-                                        Utils.showSnackBar(context, 'ERRORE',
-                                            e.toString(), true);
+                                        Utils.showSnackBar(super.context,
+                                            'ERRORE', e.toString(), true);
                                       }
                                     },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: Center(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return NotifyDialog(
-                                  nameController: _nameController,
-                                  valueController: _valueController,
-                                  stringaTrue: widget.sensor.stringaTrue,
-                                  stringaFalse: widget.sensor.stringaFalse,
-                                  addNotifica:
-                                      (String nome, bool benchmark) async {
-                                    try {
-                                      String res = await addBinaryNotify(
-                                          widget.sensor.id.toString(),
-                                          nome,
-                                          benchmark,
-                                          _token!);
-                                      Utils.showSnackBar(super.context,
-                                          'NOTIFICA AGGIUNTA', res, false);
-                                      initNotifiche();
-                                    } on HttpException catch (e) {
-                                      await _prefs.remove('token');
-                                      await _prefs.remove('tipo');
-                                      Utils.showSnackBar(
-                                          context, 'ERRORE', e.message, true);
-                                      Navigator.of(context).pushAndRemoveUntil(
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const LoginPage()),
-                                          (Route<dynamic> route) => false);
-                                    } on Exception catch (e) {
-                                      Utils.showSnackBar(super.context,
-                                          'ERRORE', e.toString(), true);
-                                    }
-                                  },
-                                );
-                              },
-                            );
-                          },
-                          child: const Text('Aggiungi una notifica'),
+                                  );
+                                },
+                              );
+                            },
+                            child: const Text('Aggiungi una notifica'),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+            )],
           ),
         ),
       ),
