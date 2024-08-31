@@ -22,17 +22,18 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
   DateFormat dateTimeFormatter = DateFormat('dd/MM/yyyy kk:mm');
   DateTime? _startDateTime;
   DateTime? _endDateTime;
-  final DateTime _defaultStart =
-      DateTime.now().subtract(const Duration(days: 7));
-  final DateTime _defaultEnd =
-      DateTime.now().subtract(const Duration(minutes: 10));
+  final DateTime _defaultStart = DateTime.now().subtract(const Duration(days: 7));
+  final DateTime _defaultEnd = DateTime.now().subtract(const Duration(minutes: 10));
+
   List<FlSpot> history = [];
   bool isHistoryInit = false;
 
   bool _isExpanded = false;
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _valueController = TextEditingController();
   List<NotificaSensore> notifiche = [];
+
   late EncryptedSharedPreferences _prefs;
   String? _token;
   String? _userType;
@@ -65,7 +66,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
           if (_endDateTime != null) {
             if (pickedDateTime.isBefore(_endDateTime!)) {
               List<FlSpot> tmpHistory = await getSensorReadings(
-                  widget.sensor.id, pickedDateTime, _endDateTime!, _token!);
+                  widget.sensor.id, pickedDateTime.toUtc(), _endDateTime!.toUtc(), _token!);
               setState(() {
                 _startDateTime = pickedDateTime;
                 history = tmpHistory;
@@ -79,7 +80,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
             }
           } else {
             List<FlSpot> tmpHistory = await getSensorReadings(
-                widget.sensor.id, pickedDateTime, _defaultEnd, _token!);
+                widget.sensor.id, pickedDateTime.toUtc(), _defaultEnd.toUtc(), _token!);
             setState(() {
               _startDateTime = pickedDateTime;
               history = tmpHistory;
@@ -89,7 +90,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
           if (_startDateTime != null) {
             if (pickedDateTime.isAfter(_startDateTime!)) {
               List<FlSpot> tmpHistory = await getSensorReadings(
-                  widget.sensor.id, _startDateTime!, pickedDateTime, _token!);
+                  widget.sensor.id, _startDateTime!.toUtc(), pickedDateTime.toUtc(), _token!);
               setState(() {
                 _endDateTime = pickedDateTime;
                 history = tmpHistory;
@@ -103,7 +104,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
             }
           } else {
             List<FlSpot> tmpHistory = await getSensorReadings(
-                widget.sensor.id, _defaultStart, pickedDateTime, _token!);
+                widget.sensor.id, _defaultStart.toUtc(), pickedDateTime.toUtc(), _token!);
             setState(() {
               _endDateTime = pickedDateTime;
               history = tmpHistory;
@@ -142,7 +143,7 @@ class _SensorDetailPageState extends State<SensorDetailPage> {
       _userType = tmpType!;
     });
 
-    await initHistory(_defaultStart, _defaultEnd);
+    await initHistory(_defaultStart.toUtc(), _defaultEnd.toUtc());
   }
 
   Future<void> initHistory(DateTime start, DateTime end) async {

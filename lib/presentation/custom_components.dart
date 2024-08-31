@@ -314,6 +314,7 @@ class MyBinarySensorInfo extends StatelessWidget {
 
 // WIDGET CHE RAPPRESENTA UN NODO CON I SUOI SENSORI COME LISTA SCROLLABILE ORIZZONTALMENTE
 // OGNI SENSORE è CLICCABILE E PORTA ALLA PROPRIA PAGINA DI DETTAGLIO
+
 class MyNodeSummary extends StatefulWidget {
   final Nodo nodo;
   final List<Sensor> sensors;
@@ -359,8 +360,7 @@ class _MyNodeSummaryState extends State<MyNodeSummary> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  widget.nodo.nome,
+                child: Text(widget.nodo.nome,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

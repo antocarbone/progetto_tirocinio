@@ -275,67 +275,60 @@ class _HomePageState extends State<HomePage> {
           },
           child: ListView(
             scrollDirection: Axis.vertical,
-            children: [Padding(
-              padding: const EdgeInsets.all(12),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 800,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      MyGenericListElement(
-                        leading: offlineNodes.isEmpty
-                            ? const Icon(Icons.wifi)
-                            : const Icon(Icons.wifi_off_rounded),
-                        title: offlineNodes.isNotEmpty
-                            ? '${offlineNodes.length} ${offlineNodes.length == 1 ? 'Nodo':'Nodi'} Offline'
-                            : 'Tutti i nodi sono online o in stato sconosciuto',
-                      ),
-                      if (offlineNodes.isNotEmpty) ...[
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxHeight: 600,
-                          ),
-                          child: Card(
-                            elevation: 10,
-                            child: Padding(
-                              padding: const EdgeInsets.all(25),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Expanded(
-                                    child: RefreshIndicator(
-                                      onRefresh: () async {
-                                        await initUserAreas();
-                                        await initOfflineNodes();
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 800,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        MyGenericListElement(
+                          leading: offlineNodes.isEmpty
+                              ? const Icon(Icons.wifi)
+                              : const Icon(Icons.wifi_off_rounded),
+                          title: offlineNodes.isNotEmpty
+                              ? '${offlineNodes.length} ${offlineNodes.length == 1 ? 'Nodo':'Nodi'} Offline'
+                              : 'Tutti i nodi sono online o in stato sconosciuto',
+                        ),
+                        if (offlineNodes.isNotEmpty) ...[
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxHeight: 600,
+                            ),
+                            child: Card(
+                              elevation: 10,
+                              child: Padding(
+                                padding: const EdgeInsets.all(25),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ListView.builder(
+                                      itemCount: offlineNodes.length,
+                                      shrinkWrap: true,
+                                      itemBuilder: (context, index) {
+                                        return MyGenericListElement(
+                                          title: offlineNodes[index]['node_name'],
+                                          subtitle: offlineNodes[index]['area_name'],
+                                          leading: const Icon(Icons.room),
+                                        );
                                       },
-                                      child: ListView.builder(
-                                        shrinkWrap: true,
-                                        itemCount: offlineNodes.length,
-                                        itemBuilder: (context, index) {
-                                          return MyGenericListElement(
-                                            title: offlineNodes[index]['node_name'],
-                                            subtitle: offlineNodes[index]
-                                                ['area_name'],
-                                            leading: const Icon(Icons.room),
-                                          );
-                                        },
-                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        )
+                          )
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            )],
+            ],
           ),
         ),
       ),
